@@ -28,6 +28,7 @@ def plan_greedy(agent_pos, jobs, grid, config):
                                   plot=False,
                                   config=config,
                                   pathplanning_only_assignment=res_agent_job)
+
     return res_agent_job, res_paths
 
 
@@ -71,9 +72,14 @@ def strictly_consec(agents_list, tasks, grid):
     TYPE = "float64"
     agents = np.array(agents_list, dtype=TYPE)
     tasks = make_unique(tasks)
-
-    free_agents = agents.copy()
-    free_tasks = tasks.copy()
+    #free_agents = np.copy(agents)
+    #free_tasks = np.copy(tasks)
+    free_agents = agents[:]
+    free_tasks = tasks[:]
+    print("free_agents")
+    print(free_agents)
+    print("free_tasks")
+    print(free_tasks)
 
     consec = {}
     agent_task_d = {}

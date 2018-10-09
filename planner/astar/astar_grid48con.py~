@@ -36,19 +36,16 @@ def get_children(current, grid):
 
 
 def heuristic(a, b, grid = False):
-    #if grid:  # costmap values # commented by chandra
-    if grid.any():
+    if grid:  # costmap values
         h = np.mean(grid[grid >= 0]) * distance(a, b)
     else:
         h = distance(a, b)
-
     assert h >= 0, "Negative Heuristic"
     return h
 
 
 def cost(a, b, grid=False):
-    #if grid:  # costmap values # commented by chandra
-    if grid.any():
+    if grid:  # costmap values
         return grid[a] * distance_manhattan(a, b)
     else:
         return distance_manhattan(a, b)

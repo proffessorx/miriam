@@ -8,7 +8,7 @@ EDGE = 1
 
 path_save = {}
 
-def path(start, goal, _map, blocked, path_save_process = {}, calc = True):
+def path(start: tuple, goal: tuple, _map: np.array, blocked: list, path_save_process: dict = {}, calc: bool = True):
     """
     Calculate or return pre-calculated path from start to goal
 

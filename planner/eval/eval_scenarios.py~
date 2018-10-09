@@ -25,31 +25,31 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     # print(mapstr) // chandra commented
     print("PLAN")
     res_agent_job, res_agent_idle, res_paths = plan(agent_pos, jobs, [], [], grid, config, plot=False)
-    # print("agent_job: " + str(res_agent_job))
-    # print("paths: " + str(res_paths))
-    # costs_opt = get_costs(res_paths, jobs, res_agent_job, display)
-    #
-    # print("GREEDY")
-    # minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)k.
-    # print("agent_job: " + str(minlp_res_agent_job))
-    # print("paths: " + str(minlp_res_paths))
-    # costs_minlp = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
-    #
-    # # MINLP VS PLAN
-    # if display:
-    #     fig = plt.figure()
-    #     ax1 = fig.add_subplot(121, projection='3d')
-    #     ax2 = fig.add_subplot(122, projection='3d')
-    #     plot_results(ax1, [], res_paths, res_agent_job, agent_pos, grid, [], jobs)
-    #     plot_results(ax2, [], minlp_res_paths, minlp_res_agent_job, agent_pos, grid, [], jobs)
-    #     plt.show()
+    print("agent_job: " + str(res_agent_job))
+    print("paths: " + str(res_paths))
+    costs_opt = get_costs(res_paths, jobs, res_agent_job, display)
+
+    print("GREEDY")
+    minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)
+    print("agent_job: " + str(minlp_res_agent_job))
+    print("paths: " + str(minlp_res_paths))
+    costs_minlp = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
+
+    # MINLP VS PLAN
+    if display:
+        fig = plt.figure()
+        ax1 = fig.add_subplot(121, projection='3d')
+        ax2 = fig.add_subplot(122, projection='3d')
+        plot_results(ax1, [], res_paths, res_agent_job, agent_pos, grid, [], jobs)
+        plot_results(ax2, [], minlp_res_paths, minlp_res_agent_job, agent_pos, grid, [], jobs)
+        plt.show()
 
     print("TCBS")
     print("agent_job: " + str(res_agent_job))
     print("paths: " + str(res_paths))
     costs_tcbs = get_costs(res_paths, jobs, res_agent_job, display)
 
-    return 0 #costs_tcbs, #costs_minlp
+    return costs_tcbs, costs_minlp
 
 
 def get_costs(paths, jobs, agent_job, display=True):
@@ -201,7 +201,6 @@ def ff():
 
 # -------
 def o():
-
     _map = load_map('o.png')
     agent_pos = [(1, 3),
 #                 (6, 1),

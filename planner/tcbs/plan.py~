@@ -12,8 +12,6 @@ from planner.tcbs.base import astar_base
 from planner.common import *
 from planner.eval.display import plot_inputs, plot_results
 from tools import ColoredLogger
-import os
-import errno
 
 logging.setLoggerClass(ColoredLogger)
 
@@ -57,6 +55,7 @@ def plan(agent_pos, jobs, alloc_jobs, idle_goals, grid,
     _config = config
 
     # load path_save
+    print(filename)
     if filename:  # TODO: check if file was created on same map
         load_paths(filename)
 
@@ -155,7 +154,6 @@ def get_children(_condition, _state):
       : A list of children
 
     """
-    print("Hello")
     (agent_pos, jobs, alloc_jobs, idle_goals, _) = condition2comp(_condition)
     (agent_job, agent_idle, blocked) = state2comp(_state)
     (left_agent_pos, left_idle_goals, left_jobs
@@ -217,7 +215,7 @@ def assign_jobs(agent_idle, agent_job, agent_pos, blocked, jobs, left_jobs):
     for left_job in left_jobs:  # this makes many children ...
         job_to_assign = jobs.index(left_job)
         for i_a in range(len(agent_pos)):
-            agent_job_new = list(agent_job)
+            agent_job_new = agent_job.copy()
             agent_job_new[i_a] += (job_to_assign,)
             children.append(comp2state(tuple(agent_job_new),
                                        agent_idle,
@@ -370,7 +368,7 @@ def heuristic_per_job(vals):
     if 'job' in vals.keys():
         job = vals['job']
         _cost = 0
-        agentposes_no_self = list(agentposes)
+        agentposes_no_self = agentposes.copy()
         agentposes_no_self.remove(job[1])
         # closest agent pose to this jobs start
         nearest_agent = get_nearest(agentposes_no_self, job[0])
@@ -787,9 +785,9 @@ def clear_set(_agent_idle, agent_job, agent_pos, idle_goals, jobs) :
     Returns:
 
     """
-    cp_agent_pos = list(agent_pos)
-    cp_idle_goals = list(idle_goals)
-    cp_jobs = list(jobs)
+    cp_agent_pos = agent_pos.copy()
+    cp_idle_goals = idle_goals.copy()
+    cp_jobs = jobs.copy()
 
     for i_a in range(len(agent_pos)):
         if len(agent_job[i_a]):  # this has jobs
@@ -803,7 +801,7 @@ def clear_set(_agent_idle, agent_job, agent_pos, idle_goals, jobs) :
 
 
 def make_unique(jobs):
-    jobs_copy = list(jobs)
+    jobs_copy = jobs.copy()
     jobs = []
     jobs_set = set()
     for j in jobs_copy:
@@ -904,7 +902,7 @@ def save_paths(filename):
     try:
         with open(filename, 'wb') as f:
             pickle.dump(path_save, f, pickle.HIGHEST_PROTOCOL)
-    except IOError as e:
+    except Exception as e:
         print(e)
 
 
@@ -913,5 +911,5 @@ def load_paths(filename):
     try:
         with open(filename, 'rb') as f:
             path_save = pickle.load(f)
-    except IOError:
+    except FileNotFoundError:
         logging.warning("WARN: File %s does not exist", filename)
