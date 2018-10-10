@@ -34,61 +34,36 @@ floorplan
   bitmap "cave.png"
 )
 
+#---------------------------------------#
+#defining a robot
+define topurg ranger
+(
+	sensor( 			
+    range [ 0.0  30.0 ]
+    fov 270.25
+   samples 1081
+  )
 
-pioneer2dx
-(		  
-  # can refer to the robot by this name
-  name "r0"
-  pose [ 4 -24 0 -121 ] 
-
-  # pioneer2dx's sonars	will be ranger:0 and the laser will be ranger:1
-  #sicklaser( pose [ 0 0 0 0 ] ) 
- 
-  # demonstrate a plugin controller, implemented in examples/ctrl/wander.cc
-  # you probably should comment this out when using simple.cfg with Player
-  ctrl "wander"
-
-  # report error-free position in world coordinates
-  localization "gps"
-  localization_origin [ 0 0 0 0 ]
-
-  trail_length 400
-    
+  # generic model properties
+  color "black"
+  size [ 0.05 0.05 0.1 ]
 )
 
-pioneer2dx
-(		  
-  # can refer to the robot by this name
-  name "r1"
-  pose [ 10 -18 0 175 ] 
-
-  # pioneer2dx's sonars	will be ranger:0 and the laser will be ranger:1
-  #sicklaser( pose [ 0 0 0 0 ] ) 
- 
-  # demonstrate a plugin controller, implemented in examples/ctrl/wander.cc
-  # you probably should comment this out when using simple.cfg with Player
-  ctrl "wander"
-
-  # report error-free position in world coordinates
-  localization "gps"
-  localization_origin [ 0 0 0 0 ]
+define erratic position
+(
+  #size [0.415 0.392 0.25]
+  size [0.35 0.35 0.25]
+  origin [-0.05 0 0 0]
+  gui_nose 1
+  drive "diff"
+  topurg(pose [ 0.050 0.000 0 0.000 ])
 )
 
-pioneer2dx
-(		  
-  # can refer to the robot by this name
-  name "r2"
-  pose [ 15 -20 0 175 ] 
+#throwing a robot
+erratic( pose [ -11.277 23.266 0 180.000 ] name "era" color "blue")
+erratic( pose [ -13.924 25.020 0 180.000 ] name "era" color "red")
+erratic( pose [ -15 20 0 180.000 ] name "era" color "green")
 
-  # pioneer2dx's sonars	will be ranger:0 and the laser will be ranger:1
-  #sicklaser( pose [ 0 0 0 0 ] ) 
- 
-  # demonstrate a plugin controller, implemented in examples/ctrl/wander.cc
-  # you probably should comment this out when using simple.cfg with Player
-  ctrl "wander"
 
-  # report error-free position in world coordinates
-  localization "gps"
-  localization_origin [ 0 0 0 0 ]
-)
+#---------------------------------------#
 
