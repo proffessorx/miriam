@@ -59,11 +59,21 @@ define erratic position
   topurg(pose [ 0.050 0.000 0 0.000 ])
 )
 
+define erratic_omni position
+(
+  #size [0.415 0.392 0.25]
+  size [0.35 0.35 0.25]
+  origin [-0.05 0 0 0]
+  gui_nose 1
+  drive "omni"
+  #drive "diff"
+  topurg(pose [ 0.050 0.000 0 0.000 ])
+)
+
 #throwing a robot
 erratic( pose [ -11.277 23.266 0 180.000 ] name "era" color "blue")
-erratic( pose [ -13.924 25.020 0 180.000 ] name "era" color "red")
+erratic_omni( pose [ -13.924 25.020 0 180.000 ] name "era" color "red")
 erratic( pose [ -15 20 0 180.000 ] name "era" color "green")
-
 
 #---------------------------------------#
 
