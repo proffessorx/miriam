@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="robot_type1" default="mir" />
+  <arg name="robot_type2" default="robotino" />
+
+  <!-- BEGIN ROBOT 1-->
+  <group ns="robot_1">
+    <param name="tf_prefix" value="robot1_tf" />
+    <node name="goal_publish" pkg="multirobotglobalplanner" type="goal_publish_1.py" output="screen" />
+    <include file="/home/cch-student/catkin_ws/src/miriam/sim_stage/launch/$(arg robot_type1)/navigation_config.launch"/>
+  </group>
+
+
+  <!-- BEGIN ROBOT 2-->
+  <group ns="robot_2">
+    <param name="tf_prefix" value="robot2_tf" />
+    <node name="goal_publish" pkg="multirobotglobalplanner" type="goal_publish_2.py" output="screen" />
+    <include file="/home/cch-student/catkin_ws/src/miriam/sim_stage/launch/$(arg robot_type1)/navigation_config.launch"/>
+  </group>
+
+</launch>
