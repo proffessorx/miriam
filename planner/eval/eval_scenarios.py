@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('/home/cch-student/own_ws/src/miriam')
+sys.path.append('/home/cch-student/catkin_ws/src/miriam')
 
 from planner.tcbs.plan import plan, generate_config
 from planner.eval.display import plot_results
