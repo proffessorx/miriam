@@ -76,10 +76,10 @@ def strictly_consec(agents_list, tasks, grid):
     #free_tasks = np.copy(tasks)
     free_agents = agents[:]
     free_tasks = tasks[:]
-    print("free_agents")
-    print(free_agents)
-    print("free_tasks")
-    print(free_tasks)
+#    print("free_agents")
+#    print(free_agents)
+#    print("free_tasks")
+#    print(free_tasks)
 
     consec = {}
     agent_task_d = {}
