@@ -4,11 +4,12 @@
 @author: cch-student : Ali Qizilbash
 
 source : https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms#Edge_selection
+ACO __init__ : https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms
 cumulative probability behavior : http://stackoverflow.com/a/3679747/5343977
 zero increment : http://stackoverflow.com/a/10426033/5343977
 
 Threading : 
-Threading in Python : 
+Threading in Python : http://stackoverflow.com/a/11968818/5343977
 """
 
 from threading import Thread
@@ -73,7 +74,8 @@ class ant_colony:
             
             pick_path() : Selecting Next Node to traverse
             traverse() : Move to next location
-            
+            alpha : Ph constant      (0.1 -- 0.9)
+            beta : distance constant (0.1 -- 5.0)
 			"""
 			while self.possible_locations:
 				next = self.pick_path()
@@ -202,53 +204,35 @@ class ant_colony:
               beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=80):
         
 		"""
-		initializes an ant colony (houses a number of worker ants that will traverse a map to find an optimal route as per ACO [Ant Colony Optimization])
-		source: https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms
+        Initializing an ANT Colony. 
+		(ants will traverse the map to find optimal solution using pheromone and distances)
+        "ants : holds worker ants as they traverse the map, properties: total distance traveled & route"
+        ant_count : Number of ANTS generated
 		
-		nodes -> is assumed to be a dict() mapping node ids to values 
-			that are understandable by distance_callback
+		nodes : DICT, list with Labels to be used by distance_callback
 			
-		distance_callback -> is assumed to take a pair of coordinates and return the distance between them
+		distance_callback : Gives/returns distance between > is assumed to take a pair of coordinates and return the distance between them
 			populated into distance_matrix on each call to get_distance()
 			
-		start -> if set, then is assumed to be the node where all ants start their traversal
-			if unset, then assumed to be the first key of nodes when sorted()
+		start : starting point of Ants. Default: start from first sorted key of Node
 		
-		distance_matrix -> holds values of distances calculated between nodes
-			populated on demand by get_distance()
+		distance_matrix : matrix filled with Distances by get_distance()
 		
-		pheromone_map -> holds final values of pheromones
-			used by ants to determine traversals
-			pheromone dissipation happens to these values first, before adding pheromone values from the ants during their traversal
-			(in ant_updated_pheromone_map)
+		pheromone_map : final values of Pheromone
+		pheromone dissipation happens to these values first,
+        before adding pheromone values from the ants during their traversal
+		(in ant_updated_pheromone_map)
 			
-		ant_updated_pheromone_map -> a matrix to hold the pheromone values that the ants lay down
-			not used to dissipate, values from here are added to pheromone_map after dissipation step
-			(reset for each traversal)
-			
-		alpha -> a parameter from the ACO algorithm to control the influence of the amount of pheromone when an ant makes a choice
+		ant_updated_pheromone_map : matrix filled with Ph values laid by ANTS
+		not used to dissipate, values from here are added to pheromone_map after dissipation step
+		(reset for each traversal)
 		
-		beta -> a parameters from ACO that controls the influence of the distance to the next node in ant choice making
-		
-		pheromone_constant -> a parameter used in depositing pheromones on the map (Q in ACO algorithm)
-			used by ph_map_update()
-			
-		pheromone_evaporation_coefficient -> a parameter used in removing pheromone values from the pheromone_map (rho in ACO algorithm)
-			used by ph_map_update()
-		
-		ants -> holds worker ants
-			they traverse the map as per ACO
-			notable properties:
-				total distance traveled
-				route
-			
-		first_pass -> flags a first pass for the ants, which triggers unique behavior
-		
-		iterations -> how many iterations to let the ants traverse the map
-		
-		shortest_distance -> the shortest distance seen from an ant traversal
-		
-		shortets_path_seen -> the shortest path seen from a traversal (shortest_distance is the distance along this path)
+        alpha : Pheromone  constant to control influence of Ph while selecting Path          (0.1 -- 0.9)
+        beta  : distance   constant to control influence of Distance while selecting Path    (0.1 -- 5.0)
+        
+		pheromone_constant                : "Q"   depositing pheromone factor used in ph_map_update()
+		pheromone_evaporation_coefficient : "rho" evaporating pheromone factor used in ph_map_update()
+		iterations : number of Iterations for ANTS to tranverse the Map	
 		"""
 		#nodes
 		if type(nodes) is not dict:
@@ -348,9 +332,10 @@ class ant_colony:
 	def get_distance(self, start, end):
 		#print("get_distance")
 		"""
-		uses the distance_callback to return the distance between nodes
-		if a distance has not been calculated before, then it is populated in distance_matrix and returned
-		if a distance has been called before, then its value is returned from distance_matrix
+		Returns Distance between Nodes.
+        uses distance_callback
+		if a distance not calculated before, then it is populated in distance_matrix and returned
+		if a distance called before, then its value is returned from distance_matrix
 		"""
 		if not self.distance_matrix[start][end]:
 			distance = self.distance_callback(self.nodes[start], self.nodes[end])
@@ -363,11 +348,11 @@ class ant_colony:
 		return self.distance_matrix[start][end]
 		
 	def nodes_init(self, nodes):
-		print("nodes_init")
+		print("nodes_init and ID assigning")
 		"""
-		create a mapping of internal id numbers (0 .. n) to the keys in the nodes passed 
+		Initializing Nodes and assigning ID's 
 		create a mapping of the id's to the values of nodes
-		we use id_to_key to return the route in the node names the caller expects in main()
+		use id_to_key to return route in the node names the caller expects in main()
 		"""
 		id_to_key = dict()
 		id_to_values = dict()
@@ -383,9 +368,9 @@ class ant_colony:
 	def matrix_init(self, size, value=0.0):
 		#print ("matrix_init")
 		"""
-		setup a matrix NxN (where n = size)
-		used in both self.distance_matrix and self.pheromone_map
-		as they require identical matrixes besides which value to initialize to
+		Initializing a Matrix  NxN (where n = size)
+		for, self.distance_matrix and self.pheromone_map
+		Also, Initializing with any Value possible
 		"""
 		ret = []
 		for row in range(size):
@@ -395,10 +380,9 @@ class ant_colony:
 	def ants_init(self, start):
 		#print ("ants_init")
 		"""
-		on first pass:
-			create a number of ant objects
-		on subsequent passes, just call __init__ on each to reset them
-		by default, all ants start at the first node, 0
+		Initializing ANTS
+        first_pass also new ants
+        on Normal passes, just call __init__ on each ANT to reset them
 		"""
 		#allocate new ants on the first pass
 		if self.first_pass:
@@ -411,11 +395,8 @@ class ant_colony:
 	def ph_map_update(self):
 		#print("ph_map_update")
 		"""
-		1)	Update self.pheromone_map by decaying values contained therein via the ACO algorithm
-		2)	Add pheromone_values from all ants from ant_updated_pheromone_map
-		called by:
-			main()
-			(after all ants have traveresed)
+        Ph Map update by Decay and new Ph values deposited by ANTS
+		called by main() after all ants are traversed.
 		"""
 		#always a square matrix
 		for start in range(len(self.pheromone_map)):
@@ -425,19 +406,16 @@ class ant_colony:
 				self.pheromone_map[start][end] = (1-self.pheromone_evaporation_coefficient)*self.pheromone_map[start][end]
 				
 				#then add all contributions to this location for each ant that travered it
-				#(ACO)
 				#tau_xy <- tau_xy + delta tau_xy_k
 				#	delta tau_xy_k = Q / L_k
 				self.pheromone_map[start][end] += self.ant_updated_pheromone_map[start][end]
 	
-	def _populate_ant_updated_pheromone_map(self, ant):
+	def update_ant_updated_pheromone_map(self, ant):
 		#print("populate")
 		"""
-		given an ant, populate ant_updated_pheromone_map with pheromone values according to ACO
+		For every ANT, updates new Ph Values to the ant_updated_pheromone_map
 		along the ant's route
-		called from:
-			main()
-			( before ph_map_update() )
+		called by main() before ph_map_update
 		"""
 		route = ant.get_route()
 		for i in range(len(route)-1):
@@ -459,11 +437,9 @@ class ant_colony:
 	def main(self):
 		#print("main")
 		"""
-		Runs the worker ants, collects their returns and updates the pheromone map with pheromone values from workers
-			calls:
-			_update_pheromones()
-			ant.run()
-		runs the simulation self.iterations times
+        Runs Iteration Times
+        Runs Threading -> ant.start() and ant.join() 
+		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		
 		for _ in range(self.iterations):
@@ -471,14 +447,13 @@ class ant_colony:
 			for ant in self.ants:
 				ant.start()
 			
-			#source: http://stackoverflow.com/a/11968818/5343977
 			#wait until the ants are finished, before moving on to modifying shared resources
 			for ant in self.ants:
 				ant.join()
 			
 			for ant in self.ants:	
 				#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
-				self._populate_ant_updated_pheromone_map(ant)
+				self.update_ant_updated_pheromone_map(ant)
 				
 				#if we haven't seen any paths yet, then populate for comparisons later
 				if not self.shortest_distance:
@@ -497,11 +472,11 @@ class ant_colony:
 			#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 			self.ph_map_update()
 			
-			#flag that we finished the first pass of the ants traversal
+			#flag when first pass is done
 			if self.first_pass:
 				self.first_pass = False
 			
-			#reset all ants to default for the next iteration
+			#reset all ANTS for next iteration
 			self.ants_init(self.start)
 			
 			#reset ant_updated_pheromone_map to record pheromones for ants on next pass
