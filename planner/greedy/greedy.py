@@ -53,10 +53,15 @@ def get_closest(possible_starts, free_tasks_starts, grid, n):
 
         temp_i_possible_starts = result[temp_nearest]
         temp_i_free_tasks_start = temp_nearest[0]
+#        print("start")
+#        print(tuple(possible_starts[temp_i_possible_starts]))
+#        print("end")
+#        print(tuple(free_tasks_starts[temp_i_free_tasks_start]))
         p, _ = path(tuple(possible_starts[temp_i_possible_starts]),
                     tuple(free_tasks_starts[temp_i_free_tasks_start]),
                     grid,
                     [])
+        print ("paths %s " % p )
         if p:
             lengths.append(len(p))
         paths.append(p)
