@@ -226,7 +226,7 @@ def o():
                  (1, 1)]
     jobs = [((7, 4), (0, 4), 4),
             ((2, 0), (3, 7), 3),
-#            ((4, 5), (7, 5), 0),
+            ((4, 5), (7, 5), 0),
             ((4, 4), (6, 5), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)
 

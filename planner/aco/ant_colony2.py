@@ -15,6 +15,8 @@ Threading in Python : http://stackoverflow.com/a/11968818/5343977
 from threading import Thread
 import time
 import numpy as np
+import math
+from matplotlib import pyplot as plt
 from planner.common import path
 from tools import load_map
 
@@ -24,12 +26,12 @@ from tools import load_map
 
 class ant_colony:
 	class ant(Thread):
-		def __init__(self, init_location, possible_locations, pheromone_map, distance_callback, alpha, beta, first_pass=False):
+		def __init__(self, init_location, pickup_locations, pheromone_map, distance_callback, alpha, beta, first_pass=False):
 			"""
             Initializes an ANT to traverse the map.
             
             init_location : Start point of ANT
-            possible_locations : LIST of possible Nodes visitable (unvisited)
+            pickup_locations : LIST of Pickup Tasks visitable (unvisited)
             pheromone_map : map of Ph Values
             distance_callback : distance between two Nodes
             
@@ -42,14 +44,14 @@ class ant_colony:
             dist_traveled : total distance traveled in route
             location : current location of ANT
             
-            first_pass :    boolean/flag for First run
+            first_pass :    boolean/flag for First tour
             tour_complete : boolean/flag when ANT has completed its traversal
             
 			"""
 			Thread.__init__(self)
 			
 			self.init_location = init_location
-			self.possible_locations = possible_locations			
+			self.pickup_locations = pickup_locations			
 			self.route = []
 			self.dist_traveled = 0.0
 			self.location = init_location
@@ -70,14 +72,14 @@ class ant_colony:
 
 		def run(self):
 			"""
-            Run/traverse until all Possible locations are visited.
+            Traverse until all Possible locations are visited.
             
             pick_path() : Selecting Next Node to traverse
             traverse() : Move to next location
             alpha : Ph constant      (0.1 -- 0.9)
             beta : distance constant (0.1 -- 5.0)
 			"""
-			while self.possible_locations:
+			while self.pickup_locations:
 				next = self.pick_path()
 				self.traverse(self.location, next)
 				
@@ -94,13 +96,13 @@ class ant_colony:
 			#on the first pass (no pheromones), then we can just choice() to find the next one
 			if self.first_pass:
 				import random
-				return random.choice(self.possible_locations)
+				return random.choice(self.pickup_locations)
 			
 			attractiveness = dict()
 			sum_total = 0.0
 			#for each possible location, find its attractiveness (it's (pheromone amount)*1/distance [tau*eta, from the algortihm])
 			#sum all attrativeness amounts for calculating probability of each route in the next step
-			for possible_next_location in self.possible_locations:
+			for possible_next_location in self.pickup_locations:
 				#NOTE: do all calculations as float, otherwise we get integer division at times for really hard to track down bugs
 				pheromone_amount = float(self.pheromone_map[self.location][possible_next_location])
 				distance = float(self.distance_callback(self.location, possible_next_location))
@@ -172,7 +174,7 @@ class ant_colony:
 			--- traverse()  and __init__() ---
 			"""
 			self.route.append(new)
-			self.possible_locations.remove(new)
+			self.pickup_locations.remove(new)
 
 		def get_route(self):
 			"""
@@ -186,6 +188,8 @@ class ant_colony:
 			"""
             Updates Distance Traveled by using distance_callback
 			"""
+			#print (start)
+			#print (end)
 			self.dist_traveled += float(self.distance_callback(start, end))
 				
 		def get_dist_traveled(self):
@@ -200,8 +204,8 @@ class ant_colony:
 # INITIALIZATION METHOD:::
 # =============================================================================
 		
-	def __init__(self, nodes, distance_callback, start=None, ant_count=50, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=80):
+	def __init__(self, nodes, distance_callback, start=None, ant_count=3, alpha=0.5,
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
         
 		"""
         Initializing an ANT Colony. 
@@ -438,18 +442,23 @@ class ant_colony:
 		#print("main")
 		"""
         Runs Iteration Times
-        Runs Threading -> ant.start() and ant.join() 
+        Runs Threading : ant.start() and ant.join() 
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
-		
+		dists = []
 		for _ in range(self.iterations):
+			for ant in self.ants:
+				ant.run()
+                
+            #----------------THREADING----------------------    
 			#start the multi-threaded ants, calls ant.run() in a new thread
-			for ant in self.ants:
-				ant.start()
-			
-			#wait until the ants are finished, before moving on to modifying shared resources
-			for ant in self.ants:
-				ant.join()
+#			for ant in self.ants:
+#				ant.start()
+#			
+#			#wait until the ants are finished, before moving on to modifying shared resources
+#			for ant in self.ants:
+#				ant.join()
+            #----------------THREADING----------------------  
 			
 			for ant in self.ants:	
 				#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
@@ -461,13 +470,14 @@ class ant_colony:
 				
 				if not self.shortest_path_seen:
 					self.shortest_path_seen = ant.get_route()
-					
+				dists.append(self.shortest_distance)
+                
 				#if we see a shorter path, then save for return
 				if ant.get_dist_traveled() < self.shortest_distance:
 					self.shortest_distance = ant.get_dist_traveled()
-					#print ("Shortest Distance is %s " % self.shortest_distance )
+					print ("Shortest Distance is %s " % self.shortest_distance )
 					self.shortest_path_seen = ant.get_route()
-					#print ( "shortest Path Seen is %s " % self.shortest_path_seen )
+					print ( "shortest Path Seen is %s " % self.shortest_path_seen )
 			
 			#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 			self.ph_map_update()
@@ -487,7 +497,7 @@ class ant_colony:
 		for id in self.shortest_path_seen:
 			ret.append(self.id_to_key[id])
 		
-		return ret
+		return ret, dists
 
 # =============================================================================
 # Inputs Section:::
@@ -499,39 +509,60 @@ class ant_colony:
 #test_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
 
 #list into dict
-list_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
-#list_nodes = [((7, 4), (0, 4)), ((2, 0), (3, 7)), ((4, 4), (6, 5))]
-print(len(list_nodes))
-starting = [(7, 4), (2, 0), (4, 4)]
-ending = [(0, 4), (3, 7), (6, 5)]
-test_nodes = dict(zip(starting, ending))
-print (test_nodes)
-#test_nodes = { i : list_nodes[i] for i in range(0, len(list_nodes) ) }
+#list_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
+#list_nodes = [((7, 4), (0, 4)), ((2, 0), (3, 7)), ((4, 4), (6, 5)), ((4, 5), (7, 5))]
+jobs = [((7, 4), (0, 4), 4),
+        ((2, 0), (3, 7), 3),
+        ((4, 5), (7, 5), 0),
+        ((4, 4), (6, 5), 1)]
+print(len(jobs))
+
+#starting = [(7, 4), (2, 0), (4, 4)]
+#ending = [(0, 4), (3, 7), (6, 5)]
+#test_nodes = dict(zip(starting, ending))
 #print (test_nodes)
 
+test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
+print (test_nodes)
 
-#...and a function to get distance between nodes...
+
+#...and a function to get distance between Tasks...
 def distance(start, end):
+	#print ("Distance Function")
+	''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
+	first_pnd = man_dist(start[0], start[1])
+	second_pnd = man_dist(end[0] , end[1])
+	traverse_dist = man_dist(start[1], end[0])
+
+	#print(first_pnd + second_pnd + traverse_dist)
+	return first_pnd + second_pnd + traverse_dist
+
+    
+def euc_dist(start, end):
 	x_distance = abs(start[0] - end[0])
 	y_distance = abs(start[1] - end[1])
-	
-	#c = sqrt(a^2 + b^2)
-	import math
 	return math.sqrt(pow(x_distance, 2) + pow(y_distance, 2))
+
+def man_dist(start, end):
+    return abs(start[0] - end[0]) + abs(start[1] - end[1])
 
 #...we can make a colony of ants...
 colony = ant_colony(test_nodes, distance)
 
 #...that will find the optimal solution with ACO
 aco_time = time.time()
-answer = colony.main()
+answer, dists = colony.main()
 print (answer)
 print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
+
+plt.plot(dists)
+plt.show()
 
 _map = load_map('o.png')
 grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
 
-p, _ = path( tuple([1.0, 7.0]), tuple([3.0, 9.0]), grid, []) 
+
+'''checking planner.common.path'''
+p, _ = path( (6.0, 5.0), (7.0, 4.0), grid, [])
 print (p)
-print ("-----")
 print(_)
