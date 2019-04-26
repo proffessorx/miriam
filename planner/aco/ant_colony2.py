@@ -48,7 +48,8 @@ class ant_colony:
             tour_complete : boolean/flag when ANT has completed its traversal
             
 			"""
-			Thread.__init__(self)
+			#for THREADING
+			#Thread.__init__(self)
 			
 			self.init_location = init_location
 			self.pickup_locations = pickup_locations			
@@ -204,7 +205,7 @@ class ant_colony:
 # INITIALIZATION METHOD:::
 # =============================================================================
 		
-	def __init__(self, nodes, distance_callback, start=None, ant_count=3, alpha=0.5,
+	def __init__(self, nodes, distance_callback, start = None, ant_count=3, alpha=0.5,
               beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
         
 		"""
@@ -218,7 +219,8 @@ class ant_colony:
 		distance_callback : Gives/returns distance between > is assumed to take a pair of coordinates and return the distance between them
 			populated into distance_matrix on each call to get_distance()
 			
-		start : starting point of Ants. Default: start from first sorted key of Node
+		(old) start : starting point of Ants. Default: start from first sorted key of Node
+        start : should be starting Node of First Robot (Later, Multi-Robots) e.g. start = [(1,3), None]
 		
 		distance_matrix : matrix filled with Distances by get_distance()
 		
@@ -244,7 +246,28 @@ class ant_colony:
 		
 		if len(nodes) < 1:
 			raise ValueError("there must be at least one node in dict nodes")
-		#print(nodes)		
+		#print(nodes)
+
+        #start
+		if start is None:
+			self.start = 0
+		else:
+			''' When ONE starting Node/Robot is Given'''
+			self.start = None
+			print ("Starting Point(0) and Tasks(1,2,..)")
+			nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
+			nodes.update( {0: start} )
+			print (nodes)
+			self.start = 0
+            
+			#init start to internal id of node id passed
+#			for key, value in self.id_to_key.items():
+#				if value == start:
+#					self.start = key
+#			#if we didn't find a key in the nodes passed in, then raise
+#			if self.start is None:
+#				raise KeyError("Key: " + str(start) + " not found in the nodes dict passed.")
+		
 		#create internal mapping and mapping for return to caller
 		self.id_to_key, self.nodes = self.nodes_init(nodes)
 		#print(self.nodes)
@@ -261,20 +284,7 @@ class ant_colony:
 			
 		self.distance_callback = distance_callback
 		
-		#start
-		if start is None:
-			self.start = 0
-		else:
-			self.start = None
-			#init start to internal id of node id passed
-			for key, value in self.id_to_key.items():
-				if value == start:
-					self.start = key
-			
-			#if we didn't find a key in the nodes passed in, then raise
-			if self.start is None:
-				raise KeyError("Key: " + str(start) + " not found in the nodes dict passed.")
-		
+		#start nicht
 		#ant_count
 		if type(ant_count) is not int:
 			raise TypeError("ant_count must be int")
@@ -352,7 +362,8 @@ class ant_colony:
 		return self.distance_matrix[start][end]
 		
 	def nodes_init(self, nodes):
-		print("nodes_init and ID assigning")
+		#print("nodes_init and ID assigning")
+		#print(nodes)
 		"""
 		Initializing Nodes and assigning ID's 
 		create a mapping of the id's to the values of nodes
@@ -503,6 +514,33 @@ class ant_colony:
 # Inputs Section:::
 # =============================================================================
 
+
+#Distance function to get distance between Tasks...
+def distance(start, end):
+	#print ("Distance Function")
+    
+	if start[1] is None:
+		first_pnd = 0
+		traverse_dist = man_dist(start[0], end[0])
+    
+	else:
+		''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
+		first_pnd = man_dist(start[0], start[1])
+		traverse_dist = man_dist(start[1], end[0])
+
+	second_pnd = man_dist(end[0] , end[1])
+	#print(first_pnd + second_pnd + traverse_dist)
+	return first_pnd + second_pnd + traverse_dist
+  
+def euc_dist(start, end):
+	x_distance = abs(start[0] - end[0])
+	y_distance = abs(start[1] - end[1])
+	return math.sqrt(pow(x_distance, 2) + pow(y_distance, 2))
+
+def man_dist(start, end):
+    return abs(start[0] - end[0]) + abs(start[1] - end[1])
+
+
 #given some nodes, and some locations...
 #test_nodes = {0: (0, 7), 1: (3, 9), 2: (12, 4), 3: (14, 11), 4: (8, 11), 5: (15, 6), 6: (6, 15), 7: (15, 9), 8: (12, 10), 9: (10, 7)}
 
@@ -515,39 +553,15 @@ jobs = [((7, 4), (0, 4), 4),
         ((2, 0), (3, 7), 3),
         ((4, 5), (7, 5), 0),
         ((4, 4), (6, 5), 1)]
-print(len(jobs))
-
-#starting = [(7, 4), (2, 0), (4, 4)]
-#ending = [(0, 4), (3, 7), (6, 5)]
-#test_nodes = dict(zip(starting, ending))
-#print (test_nodes)
-
+#print(len(jobs))
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
-print (test_nodes)
+print ("These are the Tasks " , test_nodes)
 
-
-#...and a function to get distance between Tasks...
-def distance(start, end):
-	#print ("Distance Function")
-	''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
-	first_pnd = man_dist(start[0], start[1])
-	second_pnd = man_dist(end[0] , end[1])
-	traverse_dist = man_dist(start[1], end[0])
-
-	#print(first_pnd + second_pnd + traverse_dist)
-	return first_pnd + second_pnd + traverse_dist
-
-    
-def euc_dist(start, end):
-	x_distance = abs(start[0] - end[0])
-	y_distance = abs(start[1] - end[1])
-	return math.sqrt(pow(x_distance, 2) + pow(y_distance, 2))
-
-def man_dist(start, end):
-    return abs(start[0] - end[0]) + abs(start[1] - end[1])
+#ROBOT STARTING POSTION #TODO
+robot_pos=[(1,3), None]
 
 #...we can make a colony of ants...
-colony = ant_colony(test_nodes, distance)
+colony = ant_colony(test_nodes, distance, robot_pos)
 
 #...that will find the optimal solution with ACO
 aco_time = time.time()
