@@ -20,6 +20,9 @@ from matplotlib import pyplot as plt
 from planner.common import path
 from tools import load_map
 
+_map = load_map('o.png')
+grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
+
 # =============================================================================
 # MAIN CLASS :::
 # =============================================================================
@@ -351,6 +354,13 @@ class ant_colony:
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
 		"""
+#		print("Path Planning") #TODO
+#		print (self.nodes[start])
+#		p, _ = path( (6.0, 5.0), (7.0, 4.0), grid, [])
+#		print (p)
+#		path_length = len(p)
+#		print (path_length)
+        
 		if not self.distance_matrix[start][end]:
 			distance = self.distance_callback(self.nodes[start], self.nodes[end])
 			
@@ -521,14 +531,14 @@ def distance(start, end):
     
 	if start[1] is None:
 		first_pnd = 0
-		traverse_dist = man_dist(start[0], end[0])
+		traverse_dist = path_plan_dist(start[0], end[0])
     
 	else:
 		''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
-		first_pnd = man_dist(start[0], start[1])
-		traverse_dist = man_dist(start[1], end[0])
+		first_pnd = path_plan_dist(start[0], start[1])
+		traverse_dist = path_plan_dist(start[1], end[0])
 
-	second_pnd = man_dist(end[0] , end[1])
+	second_pnd = path_plan_dist(end[0] , end[1])
 	#print(first_pnd + second_pnd + traverse_dist)
 	return first_pnd + second_pnd + traverse_dist
   
@@ -540,6 +550,13 @@ def euc_dist(start, end):
 def man_dist(start, end):
     return abs(start[0] - end[0]) + abs(start[1] - end[1])
 
+def path_plan_dist(start, end):
+    #print("Path Planning") #TODO
+    p, _ = path( start, end, grid, [])
+    #print (p)
+    path_length = len(p)
+    #print (path_length)
+    return float(path_length)
 
 #given some nodes, and some locations...
 #test_nodes = {0: (0, 7), 1: (3, 9), 2: (12, 4), 3: (14, 11), 4: (8, 11), 5: (15, 6), 6: (6, 15), 7: (15, 9), 8: (12, 10), 9: (10, 7)}
@@ -571,12 +588,3 @@ print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
 plt.show()
-
-_map = load_map('o.png')
-grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
-
-
-'''checking planner.common.path'''
-p, _ = path( (6.0, 5.0), (7.0, 4.0), grid, [])
-print (p)
-print(_)
