@@ -7,22 +7,18 @@ import numpy as np
 from planner.astar import astar_grid48con
 from tools import load_map
 
-eight_con = False
-n = 10 #integer
-_map = load_map('o.png')
-grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
+map = load_map('o.png')
+map = map[:, ::2]
+n = map.shape[0]
+print map.shape
 
-G = nx.grid_graph([ n, n])
+G = nx.grid_graph([n, n])
 print ("G: ", G)
 
-map = np.zeros([n, n])
-map[:int(n * .8), int(n * .2)] = -1
-map[int(n * .8), int(n * .2):int(n * .6)] = -1
-map[int(n * .2), int(n * .4):int(n * .8)] = -1
-map[int(n * .2):, int(n * .8)] = -1
-
-start = (int(n * .1), int(n * .1))
-goal = (int(n * .9), int(n * .9))
+start = (1, 7)
+goal = (7, 1)
+assert map[start] >= 0, "start in obstacle"
+assert map[goal] >= 0, "goal in obstacle, %d" % map[goal]
 print ("Start: ", start)
 print ("End: ", goal)
 
@@ -38,16 +34,6 @@ for n in G.nodes():
         obstacle.append(n)
 
 G.remove_nodes_from(obstacle)
-
-if eight_con:
-    # add 8-connectedness
-    for n in G.nodes():
-        for d in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            checking = (d[0] + n[0], d[1] + n[1])
-            if G.has_node(checking):
-                if not G.has_edge(n, checking):
-                    G.add_edge(n, checking)
-                G[n][checking]['weight'] = cost(n, checking)
 
 t = timeit.Timer()
 t.timeit()
