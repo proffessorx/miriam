@@ -20,6 +20,7 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     config = generate_config()
     config['filename_pathsave'] = fname
     config['finished_agents_block'] = finished_blocking
+    print ("config:" , config)
 
     print("Problem:")
     print("Jobs" + str(jobs))

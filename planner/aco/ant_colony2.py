@@ -21,7 +21,9 @@ from planner.common import path
 from tools import load_map
 
 _map = load_map('o.png')
+#print (_map)
 grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
+#print (grid)
 
 # =============================================================================
 # MAIN CLASS :::
@@ -57,6 +59,7 @@ class ant_colony:
 			self.init_location = init_location
 			self.pickup_locations = pickup_locations			
 			self.route = []
+			self.path = []
 			self.dist_traveled = 0.0
 			self.location = init_location
 			self.pheromone_map = pheromone_map
@@ -194,6 +197,7 @@ class ant_colony:
 			"""
 			#print (start)
 			#print (end)
+            #tuple___coming
 			self.dist_traveled += float(self.distance_callback(start, end))
 				
 		def get_dist_traveled(self):
@@ -237,7 +241,7 @@ class ant_colony:
 		(reset for each traversal)
 		
         alpha : Pheromone  constant to control influence of Ph while selecting Path          (0.1 -- 0.9)
-        beta  : distance   constant to control influence of Distance while selecting Path    (0.1 -- 5.0)
+        beta  : distance   constant to control influence of Distance while selecting Path    (1.0 -- 5.0)
         
 		pheromone_constant                : "Q"   depositing pheromone factor used in ph_map_update()
 		pheromone_evaporation_coefficient : "rho" evaporating pheromone factor used in ph_map_update()
@@ -254,14 +258,18 @@ class ant_colony:
         #start
 		if start is None:
 			self.start = 0
-		else:
-			''' When ONE starting Node/Robot is Given'''
-			self.start = None
-			print ("Starting Point(0) and Tasks(1,2,..)")
-			nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
-			nodes.update( {0: start} )
-			print (nodes)
-			self.start = 0
+		else: 
+			if start[1] is None:    
+				''' When ONE starting Node/Robot is Given'''
+				self.start = None
+				#print ("Starting Point(0) and Tasks(1,2,..)")
+				nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
+				nodes.update( {0: start} )
+				#print (nodes)
+				self.start = 0
+			else: #TODO
+				print(start[1])
+				                
             
 			#init start to internal id of node id passed
 #			for key, value in self.id_to_key.items():
@@ -340,7 +348,7 @@ class ant_colony:
 		self.first_pass = True
 		self.ants = self.ants_init(self.start)
 		self.shortest_distance = None
-		self.shortest_path_seen = None
+		self.best_route_seen = None
 
 # =============================================================================
 # Main Functions :::
@@ -355,15 +363,10 @@ class ant_colony:
 		if a distance called before, then its value is returned from distance_matrix
 		"""
 #		print("Path Planning") #TODO
-#		print (self.nodes[start])
-#		p, _ = path( (6.0, 5.0), (7.0, 4.0), grid, [])
-#		print (p)
-#		path_length = len(p)
-#		print (path_length)
         
 		if not self.distance_matrix[start][end]:
-			distance = self.distance_callback(self.nodes[start], self.nodes[end])
-			
+			distance, pp = self.distance_callback(self.nodes[start], self.nodes[end])
+			#print ("distance:::: " , type(distance))
 			if (type(distance) is not int) and (type(distance) is not float):
 				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
 			
@@ -489,16 +492,16 @@ class ant_colony:
 				if not self.shortest_distance:
 					self.shortest_distance = ant.get_dist_traveled()
 				
-				if not self.shortest_path_seen:
-					self.shortest_path_seen = ant.get_route()
+				if not self.best_route_seen:
+					self.best_route_seen = ant.get_route()
 				dists.append(self.shortest_distance)
                 
 				#if we see a shorter path, then save for return
 				if ant.get_dist_traveled() < self.shortest_distance:
 					self.shortest_distance = ant.get_dist_traveled()
-					print ("Shortest Distance is %s " % self.shortest_distance )
-					self.shortest_path_seen = ant.get_route()
-					print ( "shortest Path Seen is %s " % self.shortest_path_seen )
+					#print ("Shortest Distance is %s " % self.shortest_distance )
+					self.best_route_seen = ant.get_route()
+					#print ( "With the Route %s " % self.best_route_seen)
 			
 			#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 			self.ph_map_update()
@@ -515,7 +518,7 @@ class ant_colony:
 		
 		#translate shortest path back into callers node id's
 		ret = []
-		for id in self.shortest_path_seen:
+		for id in self.best_route_seen:
 			ret.append(self.id_to_key[id])
 		
 		return ret, dists
@@ -531,16 +534,19 @@ def distance(start, end):
     
 	if start[1] is None:
 		first_pnd = 0
-		traverse_dist = path_plan_dist(start[0], end[0])
+		first_pp = []
+		traverse_dist, traverse_pp = path_plan_dist(start[0], end[0])
     
 	else:
 		''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
-		first_pnd = path_plan_dist(start[0], start[1])
-		traverse_dist = path_plan_dist(start[1], end[0])
+		first_pnd, first_pp = path_plan_dist(start[0], start[1])
+		traverse_dist, traverse_pp = path_plan_dist(start[1], end[0])
 
-	second_pnd = path_plan_dist(end[0] , end[1])
+	second_pnd, second_pp = path_plan_dist(end[0] , end[1])
 	#print(first_pnd + second_pnd + traverse_dist)
-	return first_pnd + second_pnd + traverse_dist
+	path_plan = first_pp + second_pp + traverse_pp
+	total_dist = first_pnd + second_pnd + traverse_dist
+	return total_dist, path_plan
   
 def euc_dist(start, end):
 	x_distance = abs(start[0] - end[0])
@@ -552,11 +558,12 @@ def man_dist(start, end):
 
 def path_plan_dist(start, end):
     #print("Path Planning") #TODO
-    p, _ = path( start, end, grid, [])
+    pp, _ = path( start, end, grid, [])
     #print (p)
-    path_length = len(p)
-    #print (path_length)
-    return float(path_length)
+    path_length = len(pp)
+    #print (pp)
+    #path.append(p)
+    return float(path_length), pp
 
 #given some nodes, and some locations...
 #test_nodes = {0: (0, 7), 1: (3, 9), 2: (12, 4), 3: (14, 11), 4: (8, 11), 5: (15, 6), 6: (6, 15), 7: (15, 9), 8: (12, 10), 9: (10, 7)}
@@ -572,7 +579,7 @@ jobs = [((7, 4), (0, 4), 4),
         ((4, 4), (6, 5), 1)]
 #print(len(jobs))
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
-print ("These are the Tasks " , test_nodes)
+#print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION #TODO
 robot_pos=[(1,3), None]
@@ -583,8 +590,8 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 #...that will find the optimal solution with ACO
 aco_time = time.time()
 answer, dists = colony.main()
-print (answer)
-print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
+print "Best Route: " , answer
+print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
 plt.show()
