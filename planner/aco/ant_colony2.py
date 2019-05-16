@@ -19,11 +19,27 @@ import math
 from matplotlib import pyplot as plt
 from planner.common import path
 from tools import load_map
+import networkx as nx
 
-_map = load_map('o.png')
-#print (_map)
-grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
-#print (grid)
+map = load_map('o.png')
+#print (map)
+grid = np.repeat(map[:, ::2, np.newaxis], 100, axis=2)
+#print ("Grid::: ", grid)
+#print grid.shape
+
+map = map[:, ::2]
+print map
+n = map.shape[0]
+#print map.shape
+G = nx.grid_graph([n, n])
+#print ("G::: ", G)
+
+obstacle = []
+for n in G.nodes():
+    if not map[n] >= 0:  # obstacle
+        obstacle.append(n)
+
+G.remove_nodes_from(obstacle)
 
 # =============================================================================
 # MAIN CLASS :::
@@ -112,7 +128,8 @@ class ant_colony:
 			for possible_next_location in self.pickup_locations:
 				#NOTE: do all calculations as float, otherwise we get integer division at times for really hard to track down bugs
 				pheromone_amount = float(self.pheromone_map[self.location][possible_next_location])
-				distance = float(self.distance_callback(self.location, possible_next_location))
+				dist, pp = self.distance_callback(self.location, possible_next_location)
+				distance = float(dist)
 				
 				#tau^alpha * eta^beta
 				attractiveness[possible_next_location] = pow(pheromone_amount, self.alpha)*pow(1/distance, self.beta)
@@ -188,7 +205,7 @@ class ant_colony:
             Returns Route if tour completed
             """
 			if self.tour_complete:
-				return self.route
+				return self.route, self.path
 			return None
 			
 		def dist_traveled_update(self, start, end):
@@ -198,7 +215,11 @@ class ant_colony:
 			#print (start)
 			#print (end)
             #tuple___coming
-			self.dist_traveled += float(self.distance_callback(start, end))
+			dist, pp = self.distance_callback(start, end)
+			#print dist
+			#print pp
+			self.dist_traveled += float(dist)
+			self.path.append(pp)            
 				
 		def get_dist_traveled(self):
 			"""
@@ -230,6 +251,8 @@ class ant_colony:
         start : should be starting Node of First Robot (Later, Multi-Robots) e.g. start = [(1,3), None]
 		
 		distance_matrix : matrix filled with Distances by get_distance()
+        
+        path_matrix : #TODO
 		
 		pheromone_map : final values of Pheromone
 		pheromone dissipation happens to these values first,
@@ -284,6 +307,7 @@ class ant_colony:
 		#print(self.nodes)
 		#create matrix to hold distance calculations between nodes
 		self.distance_matrix = self.matrix_init(len(nodes))
+		self.path_matrix = self.matrix_init(len(nodes))
 		#create matrix for master pheromone map, that records pheromone amounts along routes
 		self.pheromone_map = self.matrix_init(len(nodes))
 		#create a matrix for ants to add their pheromones to, before adding those to pheromone_map during the update_pheromone_map step
@@ -365,14 +389,15 @@ class ant_colony:
 #		print("Path Planning") #TODO
         
 		if not self.distance_matrix[start][end]:
-			distance, pp = self.distance_callback(self.nodes[start], self.nodes[end])
+			dist, pp = self.distance_callback(self.nodes[start], self.nodes[end])
 			#print ("distance:::: " , type(distance))
-			if (type(distance) is not int) and (type(distance) is not float):
+			if (type(dist) is not int) and (type(dist) is not float):
 				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
 			
-			self.distance_matrix[start][end] = float(distance)
-			return distance
-		return self.distance_matrix[start][end]
+			self.distance_matrix[start][end] = float(dist)
+			self.path_matrix[start][end] = pp
+			return dist, pp
+		return self.distance_matrix[start][end], self.path_matrix[start][end]
 		
 	def nodes_init(self, nodes):
 		#print("nodes_init and ID assigning")
@@ -445,7 +470,7 @@ class ant_colony:
 		along the ant's route
 		called by main() before ph_map_update
 		"""
-		route = ant.get_route()
+		route, p = ant.get_route()
 		for i in range(len(route)-1):
 			#find the pheromone over the route the ant traversed
 			current_pheromone_value = float(self.ant_updated_pheromone_map[route[i]][route[i+1]])
@@ -493,15 +518,16 @@ class ant_colony:
 					self.shortest_distance = ant.get_dist_traveled()
 				
 				if not self.best_route_seen:
-					self.best_route_seen = ant.get_route()
+					self.best_route_seen, self.best_path_seen = ant.get_route()
 				dists.append(self.shortest_distance)
                 
 				#if we see a shorter path, then save for return
 				if ant.get_dist_traveled() < self.shortest_distance:
 					self.shortest_distance = ant.get_dist_traveled()
 					#print ("Shortest Distance is %s " % self.shortest_distance )
-					self.best_route_seen = ant.get_route()
-					#print ( "With the Route %s " % self.best_route_seen)
+					self.best_route_seen, self.best_path_seen = ant.get_route()
+					#print ( "With the Route %s "  %self.best_route_seen)
+					#print ( "With the Path %s "  %self.best_path_seen)
 			
 			#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 			self.ph_map_update()
@@ -521,7 +547,7 @@ class ant_colony:
 		for id in self.best_route_seen:
 			ret.append(self.id_to_key[id])
 		
-		return ret, dists
+		return ret, dists, self.best_path_seen
 
 # =============================================================================
 # Inputs Section:::
@@ -558,12 +584,21 @@ def man_dist(start, end):
 
 def path_plan_dist(start, end):
     #print("Path Planning") #TODO
-    pp, _ = path( start, end, grid, [])
-    #print (p)
-    path_length = len(pp)
+    #pp, _ = path( start, end, grid, [])
+    #print("Grid ::: ", grid)
+    pp = nx.astar_path(G, start, end, cost)
     #print (pp)
+    path_length = len(pp)
+    #print (path_length)
     #path.append(p)
     return float(path_length), pp
+
+def cost(a, b):
+    if map[a] >= 0 and map[b] >= 0:  # no obstacle
+        #print np.linalg.norm(np.array(a)-np.array(b))
+        return np.linalg.norm(np.array(a)-np.array(b))
+    else:
+        return np.Inf
 
 #given some nodes, and some locations...
 #test_nodes = {0: (0, 7), 1: (3, 9), 2: (12, 4), 3: (14, 11), 4: (8, 11), 5: (15, 6), 6: (6, 15), 7: (15, 9), 8: (12, 10), 9: (10, 7)}
@@ -574,23 +609,24 @@ def path_plan_dist(start, end):
 #list_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
 #list_nodes = [((7, 4), (0, 4)), ((2, 0), (3, 7)), ((4, 4), (6, 5)), ((4, 5), (7, 5))]
 jobs = [((7, 4), (0, 4), 4),
-        ((2, 0), (3, 7), 3),
+        ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
-        ((4, 4), (6, 5), 1)]
+        ((4, 4), (6, 6), 1)]
 #print(len(jobs))
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
 #print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION #TODO
-robot_pos=[(1,3), None]
+robot_pos=[(1,1), None]
 
 #...we can make a colony of ants...
 colony = ant_colony(test_nodes, distance, robot_pos)
 
 #...that will find the optimal solution with ACO
 aco_time = time.time()
-answer, dists = colony.main()
+answer, dists, path_plan = colony.main()
 print "Best Route: " , answer
+print "Path Plan:  " , path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
