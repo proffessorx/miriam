@@ -28,7 +28,7 @@ grid = np.repeat(map[:, ::2, np.newaxis], 100, axis=2)
 #print grid.shape
 
 map = map[:, ::2]
-print map
+#print map
 n = map.shape[0]
 #print map.shape
 G = nx.grid_graph([n, n])
@@ -252,7 +252,7 @@ class ant_colony:
 		
 		distance_matrix : matrix filled with Distances by get_distance()
         
-        path_matrix : #TODO
+        path_matrix :
 		
 		pheromone_map : final values of Pheromone
 		pheromone dissipation happens to these values first,
@@ -291,7 +291,7 @@ class ant_colony:
 				#print (nodes)
 				self.start = 0
 			else: #TODO
-				print(start[1])
+				print("Multiple Robot Pos")
 				                
             
 			#init start to internal id of node id passed
@@ -385,9 +385,7 @@ class ant_colony:
         uses distance_callback
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
-		"""
-#		print("Path Planning") #TODO
-        
+		"""        
 		if not self.distance_matrix[start][end]:
 			dist, pp = self.distance_callback(self.nodes[start], self.nodes[end])
 			#print ("distance:::: " , type(distance))
@@ -585,7 +583,6 @@ def man_dist(start, end):
     return abs(start[0] - end[0]) + abs(start[1] - end[1])
 
 def path_plan_dist(start, end):
-    #print("Path Planning") #TODO
     #pp, _ = path( start, end, grid, [])
     #print("Grid ::: ", grid)
     pp = nx.astar_path(G, start, end, cost)
@@ -602,23 +599,23 @@ def cost(a, b):
     else:
         return np.Inf
 
-#given some nodes, and some locations...
-#test_nodes = {0: (0, 7), 1: (3, 9), 2: (12, 4), 3: (14, 11), 4: (8, 11), 5: (15, 6), 6: (6, 15), 7: (15, 9), 8: (12, 10), 9: (10, 7)}
-
-#test_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
-
-#list into dict
-#list_nodes = [(0, 7), (3, 9), (12, 4), (14, 11), (8, 11), (15, 6), (6, 15), (15, 9), (12, 10), (10, 7)]
-#list_nodes = [((7, 4), (0, 4)), ((2, 0), (3, 7)), ((4, 4), (6, 5)), ((4, 5), (7, 5))]
 jobs = [((7, 4), (0, 4), 4),
         ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
         ((4, 4), (6, 6), 1)]
-#print(len(jobs))
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
-#print ("These are the Tasks " , test_nodes)
+print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION #TODO
+agent_pos = [(1, 1), (1, 3), (1, 5)]
+robot_pos = []
+for x in agent_pos:
+    lst = []
+    lst.append(x)
+    lst.append(None)
+    robot_pos.append(lst)
+print robot_pos
+
 robot_pos=[(1,1), None]
 
 #...we can make a colony of ants...
@@ -628,7 +625,7 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 aco_time = time.time()
 answer, dists, path_plan = colony.main()
 print "Best Route: " , answer
-print "Path Plan:  " , path_plan
+#print "Path Plan:  " , path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
