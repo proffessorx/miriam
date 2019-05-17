@@ -524,7 +524,7 @@ class ant_colony:
 				#if we see a shorter path, then save for return
 				if ant.get_dist_traveled() < self.shortest_distance:
 					self.shortest_distance = ant.get_dist_traveled()
-					#print ("Shortest Distance is %s " % self.shortest_distance )
+					print ("Shortest Distance is %s " % self.shortest_distance )
 					self.best_route_seen, self.best_path_seen = ant.get_route()
 					#print ( "With the Route %s "  %self.best_route_seen)
 					#print ( "With the Path %s "  %self.best_path_seen)
@@ -557,22 +557,24 @@ class ant_colony:
 #Distance function to get distance between Tasks...
 def distance(start, end):
 	#print ("Distance Function")
-    
+	path_plan = []
+
 	if start[1] is None:
-		first_pnd = 0
-		first_pp = []
+		#first_pnd = 0
 		traverse_dist, traverse_pp = path_plan_dist(start[0], end[0])
+		path_plan.append(traverse_pp)
     
 	else:
 		''' First Task Distance (from pick to drop) + Second Task Distance + Inter-Task Distance'''
-		first_pnd, first_pp = path_plan_dist(start[0], start[1])
+#		first_pnd, first_pp = path_plan_dist(start[0], start[1])
+#		path_plan.append(first_pp)
 		traverse_dist, traverse_pp = path_plan_dist(start[1], end[0])
+		path_plan.append(traverse_pp)
 
 	second_pnd, second_pp = path_plan_dist(end[0] , end[1])
-	#print(first_pnd + second_pnd + traverse_dist)
-	path_plan = first_pp + second_pp + traverse_pp
-	total_dist = first_pnd + second_pnd + traverse_dist
-	return total_dist, path_plan
+   	path_plan.append(second_pp)
+
+	return second_pnd + traverse_dist, path_plan
   
 def euc_dist(start, end):
 	x_distance = abs(start[0] - end[0])
