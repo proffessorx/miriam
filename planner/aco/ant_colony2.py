@@ -270,6 +270,71 @@ class ant_colony:
 		pheromone_evaporation_coefficient : "rho" evaporating pheromone factor used in ph_map_update()
 		iterations : number of Iterations for ANTS to tranverse the Map	
 		"""
+
+		def check(multi_robot_nodes):
+            
+			#create internal mapping and mapping for return to caller
+			self.id_to_key, self.multi_robot_nodes = self.nodes_init(multi_robot_nodes)
+			#print(self.nodes)
+			#create matrix to hold distance calculations between nodes
+			self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
+    	    #create matrix to hold paths generated between nodes
+			self.path_matrix = self.matrix_init(len(multi_robot_nodes))
+			#create matrix for master pheromone map, that records pheromone amounts along routes
+			self.pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			#create a matrix for ants to add their pheromones to, before adding those to pheromone_map during the update_pheromone_map step
+			self.ant_updated_pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			
+			#distance_callback CHECK
+			if not callable(distance_callback):
+				raise TypeError("distance_callback is not callable, should be method")
+			self.distance_callback = distance_callback
+            
+			#ant_count CHECK
+			if type(ant_count) is not int:
+				raise TypeError("ant_count must be int")
+			if ant_count < 1:
+				raise ValueError("ant_count must be >= 1")
+			self.ant_count = ant_count
+			
+			#alpha CHECK	
+			if (type(alpha) is not int) and type(alpha) is not float:
+				raise TypeError("alpha must be int or float")
+			if alpha < 0:
+				raise ValueError("alpha must be >= 0")
+			self.alpha = float(alpha)
+			
+			#beta CHECK
+			if (type(beta) is not int) and type(beta) is not float:
+				raise TypeError("beta must be int or float")
+			if beta < 1:
+				raise ValueError("beta must be >= 1")
+			self.beta = float(beta)
+			
+			#pheromone_evaporation_coefficient CHECK
+			if (type(pheromone_evaporation_coefficient) is not int) and type(pheromone_evaporation_coefficient) is not float:
+				raise TypeError("pheromone_evaporation_coefficient must be int or float")
+			self.pheromone_evaporation_coefficient = float(pheromone_evaporation_coefficient)
+			
+			#pheromone_constant CHECK
+			if (type(pheromone_constant) is not int) and type(pheromone_constant) is not float:
+				raise TypeError("pheromone_constant must be int or float")
+			self.pheromone_constant = float(pheromone_constant)
+			
+			#iterations CHECK
+			if (type(iterations) is not int):
+				raise TypeError("iterations must be int")
+			if iterations < 0:
+				raise ValueError("iterations must be >= 0")
+			self.iterations = iterations
+			
+			#other internal variable initialize 
+			self.first_pass = True
+			self.ants = self.ants_init(self.start)
+			self.shortest_distance = None
+			self.best_route_seen = None
+			self.best_path_seen = None
+
 		#nodes
 		if type(nodes) is not dict:
 			raise TypeError("nodes must be dict")
@@ -279,101 +344,34 @@ class ant_colony:
 		#print(nodes)
 
         #start
+		robot_nodes = []
 		if start is None:
 			self.start = 0
-		else: 
+			robot_nodes = nodes            
+		else:
 			if start[1] is None:    
 				''' When ONE starting Node/Robot is Given'''
 				self.start = None
 				#print ("Starting Point(0) and Tasks(1,2,..)")
 				nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
 				nodes.update( {0: start} )
-				#print (nodes)
+				robot_nodes.append(nodes)
+				#print robot_nodes
 				self.start = 0
+				check(robot_nodes[0])
 			else: #TODO
-				print("Multiple Robot Pos")
+				self.start = None
+				robot_nodes = []
+				temp = {}       
+				for st in start:
+					temp = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
+					temp.update( {0: st} )
+					robot_nodes.append(temp)
+				print len(robot_nodes)
+				self.start = 0
+				for i in robot_nodes:
+					check(i)
 				                
-            
-			#init start to internal id of node id passed
-#			for key, value in self.id_to_key.items():
-#				if value == start:
-#					self.start = key
-#			#if we didn't find a key in the nodes passed in, then raise
-#			if self.start is None:
-#				raise KeyError("Key: " + str(start) + " not found in the nodes dict passed.")
-		
-		#create internal mapping and mapping for return to caller
-		self.id_to_key, self.nodes = self.nodes_init(nodes)
-		#print(self.nodes)
-		#create matrix to hold distance calculations between nodes
-		self.distance_matrix = self.matrix_init(len(nodes))
-		self.path_matrix = self.matrix_init(len(nodes))
-		#create matrix for master pheromone map, that records pheromone amounts along routes
-		self.pheromone_map = self.matrix_init(len(nodes))
-		#create a matrix for ants to add their pheromones to, before adding those to pheromone_map during the update_pheromone_map step
-		self.ant_updated_pheromone_map = self.matrix_init(len(nodes))
-		
-		#distance_callback
-		if not callable(distance_callback):
-			raise TypeError("distance_callback is not callable, should be method")
-			
-		self.distance_callback = distance_callback
-		
-		#start nicht
-		#ant_count
-		if type(ant_count) is not int:
-			raise TypeError("ant_count must be int")
-			
-		if ant_count < 1:
-			raise ValueError("ant_count must be >= 1")
-		
-		self.ant_count = ant_count
-		
-		#alpha	
-		if (type(alpha) is not int) and type(alpha) is not float:
-			raise TypeError("alpha must be int or float")
-		
-		if alpha < 0:
-			raise ValueError("alpha must be >= 0")
-		
-		self.alpha = float(alpha)
-		
-		#beta
-		if (type(beta) is not int) and type(beta) is not float:
-			raise TypeError("beta must be int or float")
-			
-		if beta < 1:
-			raise ValueError("beta must be >= 1")
-			
-		self.beta = float(beta)
-		
-		#pheromone_evaporation_coefficient
-		if (type(pheromone_evaporation_coefficient) is not int) and type(pheromone_evaporation_coefficient) is not float:
-			raise TypeError("pheromone_evaporation_coefficient must be int or float")
-		
-		self.pheromone_evaporation_coefficient = float(pheromone_evaporation_coefficient)
-		
-		#pheromone_constant
-		if (type(pheromone_constant) is not int) and type(pheromone_constant) is not float:
-			raise TypeError("pheromone_constant must be int or float")
-		
-		self.pheromone_constant = float(pheromone_constant)
-		
-		#iterations
-		if (type(iterations) is not int):
-			raise TypeError("iterations must be int")
-		
-		if iterations < 0:
-			raise ValueError("iterations must be >= 0")
-			
-		self.iterations = iterations
-		
-		#other internal variable init
-		self.first_pass = True
-		self.ants = self.ants_init(self.start)
-		self.shortest_distance = None
-		self.best_route_seen = None
-
 # =============================================================================
 # Main Functions :::
 # =============================================================================
@@ -387,7 +385,7 @@ class ant_colony:
 		if a distance called before, then its value is returned from distance_matrix
 		"""        
 		if not self.distance_matrix[start][end]:
-			dist, pp = self.distance_callback(self.nodes[start], self.nodes[end])
+			dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
 			#print ("distance:::: " , type(distance))
 			if (type(dist) is not int) and (type(dist) is not float):
 				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
@@ -434,20 +432,22 @@ class ant_colony:
 		Initializing ANTS
         first_pass also new ants
         on Normal passes, just call __init__ on each ANT to reset them
+        #Iteration number of times
 		"""
 		#allocate new ants on the first pass
 		if self.first_pass:
-			return [self.ant(start, self.nodes.keys(), self.pheromone_map, self.get_distance,
+			return [self.ant(start, self.multi_robot_nodes.keys(), self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
-			ant.__init__(start, self.nodes.keys(), self.pheromone_map, self.get_distance, self.alpha, self.beta)
+			ant.__init__(start, self.multi_robot_nodes.keys(), self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
 	def ph_map_update(self):
 		#print("ph_map_update")
 		"""
         Ph Map update by Decay and new Ph values deposited by ANTS
 		called by main() after all ants are traversed.
+        #Iterations number of times
 		"""
 		#always a square matrix
 		for start in range(len(self.pheromone_map)):
@@ -467,6 +467,7 @@ class ant_colony:
 		For every ANT, updates new Ph Values to the ant_updated_pheromone_map
 		along the ant's route
 		called by main() before ph_map_update
+        #ANT * Iterations number of times
 		"""
 		route, p = ant.get_route()
 		for i in range(len(route)-1):
@@ -538,7 +539,7 @@ class ant_colony:
 			self.ants_init(self.start)
 			
 			#reset ant_updated_pheromone_map to record pheromones for ants on next pass
-			self.ant_updated_pheromone_map = self.matrix_init(len(self.nodes), value=0)
+			self.ant_updated_pheromone_map = self.matrix_init(len(self.multi_robot_nodes), value=0)
 		
 		#translate shortest path back into callers node id's
 		ret = []
@@ -550,7 +551,6 @@ class ant_colony:
 # =============================================================================
 # Inputs Section:::
 # =============================================================================
-
 
 #Distance function to get distance between Tasks...
 def distance(start, end):
@@ -604,7 +604,7 @@ jobs = [((7, 4), (0, 4), 4),
         ((4, 5), (7, 5), 0),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
-print ("These are the Tasks " , test_nodes)
+#print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION #TODO
 agent_pos = [(1, 1), (1, 3), (1, 5)]
@@ -614,7 +614,7 @@ for x in agent_pos:
     lst.append(x)
     lst.append(None)
     robot_pos.append(lst)
-print robot_pos
+#print robot_pos
 
 robot_pos=[(1,1), None]
 
@@ -625,7 +625,7 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 aco_time = time.time()
 answer, dists, path_plan = colony.main()
 print "Best Route: " , answer
-#print "Path Plan:  " , path_plan
+print "Path Plan:  " , path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
