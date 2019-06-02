@@ -47,12 +47,13 @@ G.remove_nodes_from(obstacle)
 
 class ant_colony:
 	class ant(Thread):
-		def __init__(self, init_location, pickup_locations, pheromone_map, distance_callback, alpha, beta, first_pass=False):
+		def __init__(self, init_location, pickup_locations, rob, pheromone_map, distance_callback, alpha, beta, first_pass=False):
 			"""
             Initializes an ANT to traverse the map.
             
             init_location : Start point of ANT
             pickup_locations : LIST of Pickup Tasks visitable (unvisited)
+            rob : Which Robot the ANST belong to
             pheromone_map : map of Ph Values
             distance_callback : distance between two Nodes
             
@@ -73,7 +74,8 @@ class ant_colony:
 			#Thread.__init__(self)
 			
 			self.init_location = init_location
-			self.pickup_locations = pickup_locations			
+			self.pickup_locations = pickup_locations		
+			self.rob = rob
 			self.route = []
 			self.path = []
 			self.dist_traveled = 0.0
@@ -93,22 +95,24 @@ class ant_colony:
 # Ant Functions :::
 # =============================================================================
 
-		def run(self):
+		def run(self, robot):
 			"""
             Traverse until all Possible locations are visited.
+            robot: which ROBOT the ANT Belongs to
             
             pick_path() : Selecting Next Node to traverse
             traverse() : Move to next location
             alpha : Ph constant      (0.1 -- 0.9)
             beta : distance constant (0.1 -- 5.0)
-			"""
-			while self.pickup_locations:
-				next = self.pick_path()
+			"""		
+			while self.pickup_locations:                
+				next = self.pick_path(robot)
 				self.traverse(self.location, next)
 				
 			self.tour_complete = True
 		
-		def pick_path(self):
+		def pick_path(self, robot):
+            #TODO
 			"""
 			Path Selection in ACO
             
@@ -123,11 +127,13 @@ class ant_colony:
 			
 			attractiveness = dict()
 			sum_total = 0.0
+			#print ("pickup_locations: ", self.pickup_locations)
 			#for each possible location, find its attractiveness (it's (pheromone amount)*1/distance [tau*eta, from the algortihm])
 			#sum all attrativeness amounts for calculating probability of each route in the next step
 			for possible_next_location in self.pickup_locations:
 				#NOTE: do all calculations as float, otherwise we get integer division at times for really hard to track down bugs
-				pheromone_amount = float(self.pheromone_map[self.location][possible_next_location])
+				#print ("here: ", self.pheromone_map[robot][self.location][possible_next_location])
+				pheromone_amount = float(self.pheromone_map[robot][self.location][possible_next_location])
 				dist, pp = self.distance_callback(self.location, possible_next_location)
 				distance = float(dist)
 				
@@ -233,7 +239,7 @@ class ant_colony:
 # INITIALIZATION METHOD:::
 # =============================================================================
 		
-	def __init__(self, nodes, distance_callback, start = None, ant_count=3, alpha=0.5,
+	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
               beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
         
 		"""
@@ -242,6 +248,8 @@ class ant_colony:
         "ants : holds worker ants as they traverse the map, properties: total distance traveled & route"
         ant_count : Number of ANTS generated
 		
+        robots : Number of Robots
+            
 		nodes : DICT, list with Labels to be used by distance_callback
 			
 		distance_callback : Gives/returns distance between > is assumed to take a pair of coordinates and return the distance between them
@@ -275,15 +283,20 @@ class ant_colony:
             
 			#create internal mapping and mapping for return to caller
 			self.id_to_key, self.multi_robot_nodes = self.nodes_init(multi_robot_nodes)
-			#print(self.nodes)
+			#print(multi_robot_nodes)
 			#create matrix to hold distance calculations between nodes
-			self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
+			#self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
+			self.distance_matrix.append(self.matrix_init(len(multi_robot_nodes)))
+			#print(self.distance_matrix)
     	    #create matrix to hold paths generated between nodes
-			self.path_matrix = self.matrix_init(len(multi_robot_nodes))
+			#self.path_matrix = self.matrix_init(len(multi_robot_nodes))
+			self.path_matrix.append(self.matrix_init(len(multi_robot_nodes)))
 			#create matrix for master pheromone map, that records pheromone amounts along routes
-			self.pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			#self.pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			self.pheromone_map.append(self.matrix_init(len(multi_robot_nodes)))
 			#create a matrix for ants to add their pheromones to, before adding those to pheromone_map during the update_pheromone_map step
-			self.ant_updated_pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			#self.ant_updated_pheromone_map = self.matrix_init(len(multi_robot_nodes))
+			self.ant_updated_pheromone_map.append(self.matrix_init(len(multi_robot_nodes)))
 			
 			#distance_callback CHECK
 			if not callable(distance_callback):
@@ -343,6 +356,11 @@ class ant_colony:
 			raise ValueError("there must be at least one node in dict nodes")
 		#print(nodes)
 
+		self.distance_matrix = []
+		self.path_matrix = []
+		self.pheromone_map = []
+		self.ant_updated_pheromone_map = []
+        
         #start
 		robot_nodes = []
 		if start is None:
@@ -356,7 +374,7 @@ class ant_colony:
 				nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
 				nodes.update( {0: start} )
 				robot_nodes.append(nodes)
-				#print robot_nodes
+				self.robots = len(robot_nodes)
 				self.start = 0
 				check(robot_nodes[0])
 			else: #TODO
@@ -367,7 +385,7 @@ class ant_colony:
 					temp = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
 					temp.update( {0: st} )
 					robot_nodes.append(temp)
-				print len(robot_nodes)
+				self.robots = len(robot_nodes)
 				self.start = 0
 				for i in robot_nodes:
 					check(i)
@@ -383,17 +401,20 @@ class ant_colony:
         uses distance_callback
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
-		"""        
-		if not self.distance_matrix[start][end]:
-			dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
-			#print ("distance:::: " , type(distance))
-			if (type(dist) is not int) and (type(dist) is not float):
-				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
-			
-			self.distance_matrix[start][end] = float(dist)
-			self.path_matrix[start][end] = pp
-			return dist, pp
-		return self.distance_matrix[start][end], self.path_matrix[start][end]
+		"""
+		for i in range(self.robots):
+			#print ("robot:", i)
+			#print(self.distance_matrix[i][start][end])
+			if not self.distance_matrix[i][start][end]:
+				dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
+				#print ("start " , self.multi_robot_nodes[start])
+				if (type(dist) is not int) and (type(dist) is not float):
+					raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
+				
+				self.distance_matrix[i][start][end] = float(dist)
+				self.path_matrix[i][start][end] = pp
+				return dist, pp
+			return self.distance_matrix[i][start][end], self.path_matrix[i][start][end]
 		
 	def nodes_init(self, nodes):
 		#print("nodes_init and ID assigning")
@@ -436,13 +457,13 @@ class ant_colony:
 		"""
 		#allocate new ants on the first pass
 		if self.first_pass:
-			return [self.ant(start, self.multi_robot_nodes.keys(), self.pheromone_map, self.get_distance,
+			return [self.ant(start, self.multi_robot_nodes.keys(), self.robots, self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
-			ant.__init__(start, self.multi_robot_nodes.keys(), self.pheromone_map, self.get_distance, self.alpha, self.beta)
+			ant.__init__(start, self.multi_robot_nodes.keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
-	def ph_map_update(self):
+	def ph_map_update(self, robot):
 		#print("ph_map_update")
 		"""
         Ph Map update by Decay and new Ph values deposited by ANTS
@@ -450,18 +471,18 @@ class ant_colony:
         #Iterations number of times
 		"""
 		#always a square matrix
-		for start in range(len(self.pheromone_map)):
-			for end in range(len(self.pheromone_map)):
+		for start in range(len(self.pheromone_map[robot])):
+			for end in range(len(self.pheromone_map[robot])):
 				#decay the pheromone value at this location
 				#tau_xy <- (1-rho)*tau_xy	(ACO)
-				self.pheromone_map[start][end] = (1-self.pheromone_evaporation_coefficient)*self.pheromone_map[start][end]
+				self.pheromone_map[robot][start][end] = (1-self.pheromone_evaporation_coefficient)*self.pheromone_map[robot][start][end]
 				
 				#then add all contributions to this location for each ant that travered it
 				#tau_xy <- tau_xy + delta tau_xy_k
 				#	delta tau_xy_k = Q / L_k
-				self.pheromone_map[start][end] += self.ant_updated_pheromone_map[start][end]
+				self.pheromone_map[robot][start][end] += self.ant_updated_pheromone_map[robot][start][end]
 	
-	def update_ant_updated_pheromone_map(self, ant):
+	def update_ant_updated_pheromone_map(self, ant, robot):
 		#print("populate")
 		"""
 		For every ANT, updates new Ph Values to the ant_updated_pheromone_map
@@ -472,15 +493,15 @@ class ant_colony:
 		route, p = ant.get_route()
 		for i in range(len(route)-1):
 			#find the pheromone over the route the ant traversed
-			current_pheromone_value = float(self.ant_updated_pheromone_map[route[i]][route[i+1]])
-		
+			current_pheromone_value = float(self.ant_updated_pheromone_map[robot][route[i]][route[i+1]])
+
 			#update the pheromone along that section of the route
 			#(ACO)
 			#	delta tau_xy_k = Q / L_k
 			new_pheromone_value = self.pheromone_constant/ant.get_dist_traveled()
-			
-			self.ant_updated_pheromone_map[route[i]][route[i+1]] = current_pheromone_value + new_pheromone_value
-			self.ant_updated_pheromone_map[route[i+1]][route[i]] = current_pheromone_value + new_pheromone_value
+
+			self.ant_updated_pheromone_map[robot][route[i]][route[i+1]] = current_pheromone_value + new_pheromone_value
+			self.ant_updated_pheromone_map[robot][route[i+1]][route[i]] = current_pheromone_value + new_pheromone_value
 
 # =============================================================================
 # MAIN ALGO:::
@@ -495,52 +516,55 @@ class ant_colony:
 		"""
 		dists = []
 		for _ in range(self.iterations):
-			for ant in self.ants:
-				ant.run()
+			for robot in range(self.robots):
                 
-            #----------------THREADING----------------------    
-			#start the multi-threaded ants, calls ant.run() in a new thread
-#			for ant in self.ants:
+				for ant in self.ants:
+					ant.run(robot)
+             	   
+           	 #----------------THREADING----------------------    
+				#start the multi-threaded ants, calls ant.run() in a new thread
+#				for ant in self.ants:
 #				ant.start()
-#			
-#			#wait until the ants are finished, before moving on to modifying shared resources
-#			for ant in self.ants:
-#				ant.join()
-            #----------------THREADING----------------------  
-			
-			for ant in self.ants:	
-				#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
-				self.update_ant_updated_pheromone_map(ant)
+#				
+#				#wait until the ants are finished, before moving on to modifying shared resources
+#				for ant in self.ants:
+#					ant.join()
+           	 #----------------THREADING----------------------  
 				
-				#if we haven't seen any paths yet, then populate for comparisons later
-				if not self.shortest_distance:
-					self.shortest_distance = ant.get_dist_traveled()
+				for ant in self.ants:	
+					#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
+					self.update_ant_updated_pheromone_map(ant, robot)
+					
+					#if we haven't seen any paths yet, then populate for comparisons later
+					if not self.shortest_distance:
+						self.shortest_distance = ant.get_dist_traveled()
+					
+					if not self.best_route_seen:
+						self.best_route_seen, self.best_path_seen = ant.get_route()
+					dists.append(self.shortest_distance)
+              	  
+					#if we see a shorter path, then save for return
+					if ant.get_dist_traveled() < self.shortest_distance:
+						self.shortest_distance = ant.get_dist_traveled()
+						print ("Shortest Distance is %s " % self.shortest_distance )
+						self.best_route_seen, self.best_path_seen = ant.get_route()
+						#print ( "With the Route %s "  %self.best_route_seen)
+						#print ( "With the Path %s "  %self.best_path_seen)
 				
-				if not self.best_route_seen:
-					self.best_route_seen, self.best_path_seen = ant.get_route()
-				dists.append(self.shortest_distance)
-                
-				#if we see a shorter path, then save for return
-				if ant.get_dist_traveled() < self.shortest_distance:
-					self.shortest_distance = ant.get_dist_traveled()
-					print ("Shortest Distance is %s " % self.shortest_distance )
-					self.best_route_seen, self.best_path_seen = ant.get_route()
-					#print ( "With the Route %s "  %self.best_route_seen)
-					#print ( "With the Path %s "  %self.best_path_seen)
+				#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
+				self.ph_map_update(robot)
+				
+				#flag when first pass is done
+				if self.first_pass:
+					self.first_pass = False
+				
+				#reset all ANTS for next iteration
+				self.ants_init(self.start)
+				
+				#reset ant_updated_pheromone_map to record pheromones for ants on next pass
+				#print ("Main ", len(self.multi_robot_nodes))
+				self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
 			
-			#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
-			self.ph_map_update()
-			
-			#flag when first pass is done
-			if self.first_pass:
-				self.first_pass = False
-			
-			#reset all ANTS for next iteration
-			self.ants_init(self.start)
-			
-			#reset ant_updated_pheromone_map to record pheromones for ants on next pass
-			self.ant_updated_pheromone_map = self.matrix_init(len(self.multi_robot_nodes), value=0)
-		
 		#translate shortest path back into callers node id's
 		ret = []
 		for id in self.best_route_seen:
@@ -572,6 +596,7 @@ def distance(start, end):
 	second_pnd, second_pp = path_plan_dist(end[0] , end[1])
    	path_plan.append(second_pp)
 
+	#print (second_pnd + traverse_dist)
 	return second_pnd + traverse_dist, path_plan
   
 def euc_dist(start, end):
@@ -614,9 +639,9 @@ for x in agent_pos:
     lst.append(x)
     lst.append(None)
     robot_pos.append(lst)
-#print robot_pos
+print robot_pos
 
-robot_pos=[(1,1), None]
+#robot_pos=[(1,1), None]
 
 #...we can make a colony of ants...
 colony = ant_colony(test_nodes, distance, robot_pos)
@@ -625,7 +650,7 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 aco_time = time.time()
 answer, dists, path_plan = colony.main()
 print "Best Route: " , answer
-print "Path Plan:  " , path_plan
+#print "Path Plan:  " , path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 
 plt.plot(dists)
