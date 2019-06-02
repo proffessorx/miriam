@@ -107,7 +107,7 @@ class ant_colony:
 			"""		
 			while self.pickup_locations:                
 				next = self.pick_path(robot)
-				self.traverse(self.location, next)
+				self.traverse(self.location, next, robot)
 				
 			self.tour_complete = True
 		
@@ -134,7 +134,7 @@ class ant_colony:
 				#NOTE: do all calculations as float, otherwise we get integer division at times for really hard to track down bugs
 				#print ("here: ", self.pheromone_map[robot][self.location][possible_next_location])
 				pheromone_amount = float(self.pheromone_map[robot][self.location][possible_next_location])
-				dist, pp = self.distance_callback(self.location, possible_next_location)
+				dist, pp = self.distance_callback(self.location, possible_next_location, robot)
 				distance = float(dist)
 				
 				#tau^alpha * eta^beta
@@ -180,7 +180,7 @@ class ant_colony:
 					return possible_next_location
 				cummulative += weight
 		
-		def traverse(self, start, end):
+		def traverse(self, start, end, robot):
 			"""
             Traversing or moving from node to node
             
@@ -194,7 +194,7 @@ class ant_colony:
             
 			"""
 			self.route_update(end)
-			self.dist_traveled_update(start, end)
+			self.dist_traveled_update(start, end, robot)
 			self.location = end
 		
 		def route_update(self, new):
@@ -214,14 +214,14 @@ class ant_colony:
 				return self.route, self.path
 			return None
 			
-		def dist_traveled_update(self, start, end):
+		def dist_traveled_update(self, start, end, robot):
 			"""
             Updates Distance Traveled by using distance_callback
 			"""
 			#print (start)
 			#print (end)
             #tuple___coming
-			dist, pp = self.distance_callback(start, end)
+			dist, pp = self.distance_callback(start, end, robot)
 			#print dist
 			#print pp
 			self.dist_traveled += float(dist)
@@ -394,7 +394,7 @@ class ant_colony:
 # Main Functions :::
 # =============================================================================
 		
-	def get_distance(self, start, end):
+	def get_distance(self, start, end, robot):
 		#print("get_distance")
 		"""
 		Returns Distance between Nodes.
@@ -402,19 +402,18 @@ class ant_colony:
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
 		"""
-		for i in range(self.robots):
-			#print ("robot:", i)
-			#print(self.distance_matrix[i][start][end])
-			if not self.distance_matrix[i][start][end]:
-				dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
-				#print ("start " , self.multi_robot_nodes[start])
-				if (type(dist) is not int) and (type(dist) is not float):
-					raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
-				
-				self.distance_matrix[i][start][end] = float(dist)
-				self.path_matrix[i][start][end] = pp
-				return dist, pp
-			return self.distance_matrix[i][start][end], self.path_matrix[i][start][end]
+		#print ("robot:", i)
+		#print(self.distance_matrix[i][start][end])
+		if not self.distance_matrix[robot][start][end]:
+			dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
+			#print ("start " , self.multi_robot_nodes[start])
+			if (type(dist) is not int) and (type(dist) is not float):
+				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
+			
+			self.distance_matrix[robot][start][end] = float(dist)
+			self.path_matrix[robot][start][end] = pp
+			return dist, pp
+		return self.distance_matrix[robot][start][end], self.path_matrix[robot][start][end]
 		
 	def nodes_init(self, nodes):
 		#print("nodes_init and ID assigning")
