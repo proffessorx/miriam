@@ -279,26 +279,25 @@ class ant_colony:
 		iterations : number of Iterations for ANTS to tranverse the Map	
 		"""
 
-		def check(multi_robot_nodes):
+		def check(multi_nodes):
             
 			#create internal mapping and mapping for return to caller
-			self.id_to_key, robot_nodes = self.nodes_init(multi_robot_nodes)
+			self.id_to_key, robot_nodes = self.nodes_init(multi_nodes)
 			#self.id_to_key.append(id_key)
 			self.multi_robot_nodes.append(robot_nodes)
-			print("here, " , self.multi_robot_nodes[self.robots].keys())
 			#create matrix to hold distance calculations between nodes
 			#self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
-			self.distance_matrix.append(self.matrix_init(len(multi_robot_nodes)))
+			self.distance_matrix.append(self.matrix_init(len(multi_nodes)))
 			#print(self.distance_matrix)
     	    #create matrix to hold paths generated between nodes
 			#self.path_matrix = self.matrix_init(len(multi_robot_nodes))
-			self.path_matrix.append(self.matrix_init(len(multi_robot_nodes)))
+			self.path_matrix.append(self.matrix_init(len(multi_nodes)))
 			#create matrix for master pheromone map, that records pheromone amounts along routes
 			#self.pheromone_map = self.matrix_init(len(multi_robot_nodes))
-			self.pheromone_map.append(self.matrix_init(len(multi_robot_nodes)))
+			self.pheromone_map.append(self.matrix_init(len(multi_nodes)))
 			#create a matrix for ants to add their pheromones to, before adding those to pheromone_map during the update_pheromone_map step
 			#self.ant_updated_pheromone_map = self.matrix_init(len(multi_robot_nodes))
-			self.ant_updated_pheromone_map.append(self.matrix_init(len(multi_robot_nodes)))
+			self.ant_updated_pheromone_map.append(self.matrix_init(len(multi_nodes)))
 			
 			#distance_callback CHECK
 			if not callable(distance_callback):
@@ -412,7 +411,7 @@ class ant_colony:
 		#print(self.distance_matrix[i][start][end])
 		if not self.distance_matrix[robot][start][end]:
 			#print ("here " , self.multi_robot_nodes[start])
-			dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
+			dist, pp = self.distance_callback(self.multi_robot_nodes[robot][start], self.multi_robot_nodes[robot][end])
 			#print ("start " , self.multi_robot_nodes[start])
 			if (type(dist) is not int) and (type(dist) is not float):
 				raise TypeError("distance_callback should return either int or float, saw: "+ str(type(distance)))
@@ -462,13 +461,14 @@ class ant_colony:
         #Iteration number of times
 		"""
 		#allocate new ants on the first pass
-		#print ("keys: ", self.multi_robot_nodes.keys())
+		#print ("Robots ", self.robots)
 		if self.first_pass:
 			return [self.ant(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
-			ant.__init__(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
+			#print ("which  ", self.multi_robot_nodes[self.robots-1].keys())
+			ant.__init__(start, self.multi_robot_nodes[self.robots-1].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
 	def ph_map_update(self, robot):
 		#print("ph_map_update")
@@ -640,7 +640,7 @@ test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
 #print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION #TODO
-agent_pos = [(1, 1), (1, 3), (1, 5)]
+agent_pos = [(1, 1), (1, 6), (1, 5)]
 robot_pos = []
 for x in agent_pos:
     lst = []
