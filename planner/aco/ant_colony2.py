@@ -282,8 +282,10 @@ class ant_colony:
 		def check(multi_robot_nodes):
             
 			#create internal mapping and mapping for return to caller
-			self.id_to_key, self.multi_robot_nodes = self.nodes_init(multi_robot_nodes)
-			#print(multi_robot_nodes)
+			self.id_to_key, robot_nodes = self.nodes_init(multi_robot_nodes)
+			#self.id_to_key.append(id_key)
+			self.multi_robot_nodes.append(robot_nodes)
+			print("here, " , self.multi_robot_nodes[self.robots].keys())
 			#create matrix to hold distance calculations between nodes
 			#self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
 			self.distance_matrix.append(self.matrix_init(len(multi_robot_nodes)))
@@ -343,6 +345,7 @@ class ant_colony:
 			
 			#other internal variable initialize 
 			self.first_pass = True
+			print ("start: ", self.start)
 			self.ants = self.ants_init(self.start)
 			self.shortest_distance = None
 			self.best_route_seen = None
@@ -360,6 +363,8 @@ class ant_colony:
 		self.path_matrix = []
 		self.pheromone_map = []
 		self.ant_updated_pheromone_map = []
+		self.multi_robot_nodes = []
+		#self.id_to_key = []
         
         #start
 		robot_nodes = []
@@ -385,10 +390,12 @@ class ant_colony:
 					temp = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
 					temp.update( {0: st} )
 					robot_nodes.append(temp)
-				self.robots = len(robot_nodes)
+				self.robots = 0
 				self.start = 0
 				for i in robot_nodes:
 					check(i)
+					#instead of assigning directly to len(robot_nodes) as useful for loop counter
+					self.robots+=1 
 				                
 # =============================================================================
 # Main Functions :::
@@ -402,9 +409,9 @@ class ant_colony:
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
 		"""
-		#print ("robot:", i)
 		#print(self.distance_matrix[i][start][end])
 		if not self.distance_matrix[robot][start][end]:
+			#print ("here " , self.multi_robot_nodes[start])
 			dist, pp = self.distance_callback(self.multi_robot_nodes[start], self.multi_robot_nodes[end])
 			#print ("start " , self.multi_robot_nodes[start])
 			if (type(dist) is not int) and (type(dist) is not float):
@@ -455,12 +462,13 @@ class ant_colony:
         #Iteration number of times
 		"""
 		#allocate new ants on the first pass
+		#print ("keys: ", self.multi_robot_nodes.keys())
 		if self.first_pass:
-			return [self.ant(start, self.multi_robot_nodes.keys(), self.robots, self.pheromone_map, self.get_distance,
+			return [self.ant(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
-			ant.__init__(start, self.multi_robot_nodes.keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
+			ant.__init__(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
 	def ph_map_update(self, robot):
 		#print("ph_map_update")
@@ -514,11 +522,10 @@ class ant_colony:
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		dists = []
+		route = []
 		for _ in range(self.iterations):
 			for robot in range(self.robots):
-                
-				for ant in self.ants:
-					ant.run(robot)
+				print ("robot:", robot)
              	   
            	 #----------------THREADING----------------------    
 				#start the multi-threaded ants, calls ant.run() in a new thread
@@ -531,6 +538,7 @@ class ant_colony:
            	 #----------------THREADING----------------------  
 				
 				for ant in self.ants:	
+					ant.run(robot)
 					#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
 					self.update_ant_updated_pheromone_map(ant, robot)
 					
@@ -563,13 +571,14 @@ class ant_colony:
 				#reset ant_updated_pheromone_map to record pheromones for ants on next pass
 				#print ("Main ", len(self.multi_robot_nodes))
 				self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
-			
-		#translate shortest path back into callers node id's
-		ret = []
-		for id in self.best_route_seen:
-			ret.append(self.id_to_key[id])
-		
-		return ret, dists, self.best_path_seen
+				
+			#translate shortest path back into callers node id's
+			ret = []
+			for id in self.best_route_seen:
+				ret.append(self.id_to_key[id])
+			route.append(ret)
+
+		return route, dists, self.best_path_seen
 
 # =============================================================================
 # Inputs Section:::
