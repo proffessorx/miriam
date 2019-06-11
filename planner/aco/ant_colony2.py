@@ -95,7 +95,7 @@ class ant_colony:
 # Ant Functions :::
 # =============================================================================
 
-		def run(self, robot, updated_pickup_locations = None):
+		def run(self, robot, assigned):
 			"""
             Traverse until all Possible locations are visited.
             robot: which ROBOT the ANT Belongs to
@@ -105,11 +105,16 @@ class ant_colony:
             alpha : Ph constant      (0.1 -- 0.9)
             beta : distance constant (0.1 -- 5.0)
 			"""		
-			if updated_pickup_locations is not None:
-				self.pickup_locations = updated_pickup_locations
-                
+			print ("RUN", assigned)
+			if len(assigned) is not 0:
+				for x in assigned:                
+					self.pickup_locations.remove(x)
+					#print ("removed &&&", assigned)
+
+			print ("Pickup :::", self.pickup_locations)    
 			while self.pickup_locations:                
 				next = self.pick_path(robot)
+				#print ("This is  ", next)
 				self.traverse(self.location, next, robot)
 				
 			self.tour_complete = True
@@ -208,8 +213,9 @@ class ant_colony:
 			--- traverse()  and __init__() ---
 			"""
 			self.route.append(new)           
+			#print ("removed", new)
 			self.pickup_locations.remove(new)
-			#print ("removed", new)            
+			#print ("after removing ", self.pickup_locations)            
 
 		def get_route(self):
 			"""
@@ -457,7 +463,7 @@ class ant_colony:
 			ret.append([float(value) for x in range(size)])
 		return ret
 	
-	def ants_init(self, start, assignments = None):
+	def ants_init(self, start, assignments = None, robot = None):
 		#print ("ants_init")
 		"""
 		Initializing ANTS
@@ -468,19 +474,23 @@ class ant_colony:
 		#allocate new ants on the first pass
 		#print ("Robots ", self.robots)
         #TODO Here I have to give Assigned Tasks to Robots
-		temp = self.multi_robot_nodes[self.robots-1].keys()
-		if assignments is not None:
-			#print ("assignments  ", self.multi_robot_nodes[self.robots-1].keys())
-			for x in assignments:
-				#print("removing ", x)
-				temp.remove(x)                
-			#print ("which  ", temp)
+#		temp = self.multi_robot_nodes[self.robots-1].keys()
+#		if assignments is not None:
+#			print ("assignments  ", self.multi_robot_nodes[self.robots-1].keys())
+#			if type(assignments) is int:
+#				temp.remove(assignments)
+#			else:
+#				for x in assignments:
+#					#print("removing ", x)
+#					temp.remove(x)                
+#			print ("for the robot: ", robot, "new multi_robot_keys  ", temp)
             
 		if self.first_pass:
 			return [self.ant(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
+			print ("RESET:::::::::::::::::::::::::::: ")
 			ant.__init__(start, self.multi_robot_nodes[self.robots-1].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
 	def ph_map_update(self, robot):
@@ -529,23 +539,21 @@ class ant_colony:
 
 		"""
 		_, tasks = self.nodes_init(test_nodes, 1)
-		temp = [0] * robot
-		sec_temp = [0] * robot        
-		#print ("temp; ", temp)
-		for r in range(robot):
+		temp = [0] * self.robots
+		sec_temp = [0] * self.robots        
+		#print ("Map ", self.pheromone_map)
+		for r in range(self.robots):
 			#print ("robot: ", r)
 			for st in range(len(self.pheromone_map[r][0])):
 				for en in range(len(self.pheromone_map[r][0])):                
 					if temp[r] < self.pheromone_map[r][st][en]:
-						temp[r] = self.pheromone_map[r][st][en], r, st, en
+						temp[r] = r, st, en, self.pheromone_map[r][st][en]						
 					if ((temp[r] is not 0) and temp[r][0]> self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]):
-						sec_temp[r] = self.pheromone_map[r][st][en], r, st, en
-                    
-						#print ("Update : ", temp)
-		print ("Update : ", temp, "2nd. ", sec_temp)
-		#if robot is 0:    
-			#print ("Update : ", robot,  self.pheromone_map[0])        
-		return [2,3]        
+						sec_temp[r] = r, st, en, self.pheromone_map[r][st][en]
+		print ("Update : ", temp[robot], "2nd. ", sec_temp[robot])
+#		if robot is 2:    
+		#print ("Update : ", temp[robot])        
+		return temp[robot], sec_temp[robot]        
 		#TODO Here I have to Assign Tasks to Robots
 		#print ("here", robot,  tasks[4])
 		#print ("ROBOT : ", tasks, robot,  self.ant_updated_pheromone_map[robot])
@@ -563,11 +571,12 @@ class ant_colony:
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		dists = []
-		route = []
+		route = []       
 		for _ in range(self.iterations):
-			for robot in range(self.robots):
-				temp = None                
-				print ("robot:", robot)
+			robot_assign = [[], [], []]            
+			assign = []
+			for robot in range(self.robots):                
+				print ("robot::::::::::::::::::::::::::::::::::::::::", robot)
              	   
            	 #----------------THREADING----------------------    
 				#start the multi-threaded ants, calls ant.run() in a new thread
@@ -580,7 +589,7 @@ class ant_colony:
            	 #----------------THREADING----------------------  
 				
 				for ant in self.ants:	
-					ant.run(robot, temp)
+					ant.run(robot, assign)
 					#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
 					self.update_ant_updated_pheromone_map(ant, robot)
 					
@@ -599,22 +608,30 @@ class ant_colony:
 						self.best_route_seen, self.best_path_seen = ant.get_route()
 						#print ( "With the Route %s "  %self.best_route_seen)
 						#print ( "With the Path %s "  %self.best_path_seen)
-				
+					dists.append(self.shortest_distance)
+
+				#print ( "With the Route ", robot,  self.best_route_seen)                    
 				#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 				self.ph_map_update(robot)
-				temp = self.update_pickup_locations(robot)
+				first_assign, sec_assign = self.update_pickup_locations(robot)
+				#if not self.first_pass:
+				assign.append(first_assign[2])
+				#assign[robot] = first_assign[2]                
+				print ("assign ", assign)
+				robot_assign[robot].append(assign[robot]) 				                
 				#flag when first pass is done
 				if self.first_pass:
 					self.first_pass = False
 				
-				#reset all ANTS for next iteration
-				self.ants_init(self.start, temp)
+				#reset all ANTS for next robot
+				self.ants_init(self.start, assign[robot], robot)
 				
 				#reset ant_updated_pheromone_map to record pheromones for ants on next pass
 				#print ("Main ", len(self.multi_robot_nodes))
 				self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
 				
-			#translate shortest path back into callers node id's
+				#translate shortest path back into callers node id's
+			print ("robot_assign ", robot_assign)    
 			ret = []
 			for id in self.best_route_seen:
 				ret.append(self.id_to_key[id])
