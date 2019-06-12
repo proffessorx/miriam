@@ -250,8 +250,8 @@ class ant_colony:
 # INITIALIZATION METHOD:::
 # =============================================================================
 		
-	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
+	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=2, alpha=0.5,
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=4):
         
 		"""
         Initializing an ANT Colony. 
@@ -490,7 +490,7 @@ class ant_colony:
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
-			print ("RESET:::::::::::::::::::::::::::: ")
+			#print ("RESET:::::::::::::::::::::::::::: ")
 			ant.__init__(start, self.multi_robot_nodes[self.robots-1].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
 	
 	def ph_map_update(self, robot):
@@ -558,6 +558,18 @@ class ant_colony:
 		#print ("here", robot,  tasks[4])
 		#print ("ROBOT : ", tasks, robot,  self.ant_updated_pheromone_map[robot])
 
+	def soft_assign(self, assign, robot_assign, robot):
+		#print ("SOFT ASSIGN")
+		"""
+		 
+		"""
+		first_assign, sec_assign = self.update_pickup_locations(robot)
+		#if not self.first_pass:
+		assign.append(first_assign[2])
+		#assign[robot] = first_assign[2]                
+		print ("assign ", assign)
+		robot_assign[robot].append(assign[robot]) 		
+
             
 # =============================================================================
 # MAIN ALGO:::
@@ -571,12 +583,12 @@ class ant_colony:
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		dists = []
-		route = []       
-		for _ in range(self.iterations):
-			robot_assign = [[], [], []]            
+		route = []
+		robot_assign = [[], [], []] 
+		for _ in range(self.iterations):         
 			assign = []
 			for robot in range(self.robots):                
-				print ("robot::::::::::::::::::::::::::::::::::::::::", robot)
+				print "Robot:", robot
              	   
            	 #----------------THREADING----------------------    
 				#start the multi-threaded ants, calls ant.run() in a new thread
@@ -613,12 +625,10 @@ class ant_colony:
 				#print ( "With the Route ", robot,  self.best_route_seen)                    
 				#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 				self.ph_map_update(robot)
-				first_assign, sec_assign = self.update_pickup_locations(robot)
-				#if not self.first_pass:
-				assign.append(first_assign[2])
-				#assign[robot] = first_assign[2]                
-				print ("assign ", assign)
-				robot_assign[robot].append(assign[robot]) 				                
+                
+                #Soft Assigning Tasks to specific Robots based on Pheromone Values 
+				self.soft_assign(assign, robot_assign, robot)
+		              
 				#flag when first pass is done
 				if self.first_pass:
 					self.first_pass = False
