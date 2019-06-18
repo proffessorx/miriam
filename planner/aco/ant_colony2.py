@@ -291,7 +291,6 @@ class ant_colony:
 		"""
 
 		def check(multi_nodes):
-            
 			#create internal mapping and mapping for return to caller
 			self.id_to_key, robot_nodes = self.nodes_init(multi_nodes)
 			#print ("here ", robot_nodes[1])
@@ -463,7 +462,7 @@ class ant_colony:
 			ret.append([float(value) for x in range(size)])
 		return ret
 	
-	def ants_init(self, start, assignments = None, robot = None):
+	def ants_init(self, start, robot = None):
 		#print ("ants_init")
 		"""
 		Initializing ANTS
@@ -545,10 +544,10 @@ class ant_colony:
 		for r in range(self.robots):
 			#print ("robot: ", r)
 			for st in range(len(self.pheromone_map[r][0])):
-				for en in range(len(self.pheromone_map[r][0])):                
+				for en in range(len(self.pheromone_map[r][0])):
 					if temp[r] < self.pheromone_map[r][st][en]:
 						temp[r] = r, st, en, self.pheromone_map[r][st][en]						
-					if ((temp[r] is not 0) and temp[r][0]> self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]):
+					if (temp[r] is not 0) and (temp[r][3] is not self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]):
 						sec_temp[r] = r, st, en, self.pheromone_map[r][st][en]
 		print ("Update : ", temp[robot], "2nd. ", sec_temp[robot])
 #		if robot is 2:    
@@ -564,11 +563,14 @@ class ant_colony:
 		 
 		"""
 		first_assign, sec_assign = self.update_pickup_locations(robot)
-		#if not self.first_pass:
-		assign.append(first_assign[2])
-		#assign[robot] = first_assign[2]                
+		if first_assign[3] > sec_assign[3]:
+			assign.append(first_assign[2])
+			robot_assign[robot].append(assign[robot])
+		elif assign is []:
+			assign = None
+        #assign[robot] = first_assign[2]                
 		print ("assign ", assign)
-		robot_assign[robot].append(assign[robot]) 		
+		#robot_assign[robot].append(assign[robot]) 		
 
             
 # =============================================================================
@@ -584,9 +586,12 @@ class ant_colony:
 		"""
 		dists = []
 		route = []
-		robot_assign = [[], [], []] 
+		robot_assign = [[], [], []]
+        #ITERATION#############################################################
 		for _ in range(self.iterations):         
 			assign = []
+            
+            #ROBOT#############################################################
 			for robot in range(self.robots):                
 				print "Robot:", robot
              	   
@@ -599,7 +604,9 @@ class ant_colony:
 #				for ant in self.ants:
 #					ant.join()
            	 #----------------THREADING----------------------  
-				
+                
+                
+				############################ANTS###############################
 				for ant in self.ants:	
 					ant.run(robot, assign)
 					#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
@@ -622,6 +629,8 @@ class ant_colony:
 						#print ( "With the Path %s "  %self.best_path_seen)
 					dists.append(self.shortest_distance)
 
+                ############################ANTS###############################
+                
 				#print ( "With the Route ", robot,  self.best_route_seen)                    
 				#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
 				self.ph_map_update(robot)
@@ -634,19 +643,22 @@ class ant_colony:
 					self.first_pass = False
 				
 				#reset all ANTS for next robot
-				self.ants_init(self.start, assign[robot], robot)
+				self.ants_init(self.start, robot)
 				
 				#reset ant_updated_pheromone_map to record pheromones for ants on next pass
 				#print ("Main ", len(self.multi_robot_nodes))
-				self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
-				
+				#self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
+				#ROBOT#############################################################
+                
+                
 				#translate shortest path back into callers node id's
 			print ("robot_assign ", robot_assign)    
 			ret = []
 			for id in self.best_route_seen:
 				ret.append(self.id_to_key[id])
 			route.append(ret)
-
+            #ITERATION#############################################################
+            
 		return route, dists, self.best_path_seen
 
 # =============================================================================
