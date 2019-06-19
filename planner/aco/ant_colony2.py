@@ -107,7 +107,8 @@ class ant_colony:
 			"""		
 			print ("RUN", assigned)
 			if len(assigned) is not 0:
-				for x in assigned:                
+				for x in assigned:
+					print x
 					self.pickup_locations.remove(x)
 					#print ("removed &&&", assigned)
 
@@ -251,7 +252,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=2, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=4):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=1):
         
 		"""
         Initializing an ANT Colony. 
@@ -547,11 +548,11 @@ class ant_colony:
 				for en in range(len(self.pheromone_map[r][0])):
 					if temp[r] < self.pheromone_map[r][st][en]:
 						temp[r] = r, st, en, self.pheromone_map[r][st][en]						
-					if (temp[r] is not 0) and (temp[r][3] is not self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]):
+					if (temp[r] is not 0) and (temp[r][3] is not self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]) and temp[r][1] is not en:
 						sec_temp[r] = r, st, en, self.pheromone_map[r][st][en]
 		print ("Update : ", temp[robot], "2nd. ", sec_temp[robot])
 #		if robot is 2:    
-		#print ("Update : ", temp[robot])        
+		#print ("Update : ", temp[robot])
 		return temp[robot], sec_temp[robot]        
 		#TODO Here I have to Assign Tasks to Robots
 		#print ("here", robot,  tasks[4])
@@ -563,11 +564,20 @@ class ant_colony:
 		 
 		"""
 		first_assign, sec_assign = self.update_pickup_locations(robot)
-		if first_assign[3] > sec_assign[3]:
+		if first_assign[2] in assign and sec_assign[2] in assign:
+			print "yes"
+		elif  first_assign[2] in assign and sec_assign[2] not in assign:
+			first_assign = sec_assign
 			assign.append(first_assign[2])
-			robot_assign[robot].append(assign[robot])
+			print first_assign[2]
+			robot_assign[robot].append(assign[-1])
+		elif first_assign[3] > sec_assign[3]/2 :
+			assign.append(first_assign[2])
+			print first_assign[2]
+			robot_assign[robot].append(assign[-1])
 		elif assign is []:
 			assign = None
+		#robot_assign[robot].append(assign[robot])
         #assign[robot] = first_assign[2]                
 		print ("assign ", assign)
 		#robot_assign[robot].append(assign[robot]) 		
@@ -590,74 +600,82 @@ class ant_colony:
         #ITERATION#############################################################
 		for _ in range(self.iterations):         
 			assign = []
-            
-            #ROBOT#############################################################
-			for robot in range(self.robots):                
-				print "Robot:", robot
-             	   
-           	 #----------------THREADING----------------------    
-				#start the multi-threaded ants, calls ant.run() in a new thread
-#				for ant in self.ants:
-#				ant.start()
-#				
-#				#wait until the ants are finished, before moving on to modifying shared resources
-#				for ant in self.ants:
-#					ant.join()
-           	 #----------------THREADING----------------------  
-                
-                
-				############################ANTS###############################
-				for ant in self.ants:	
-					ant.run(robot, assign)
-					#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
-					self.update_ant_updated_pheromone_map(ant, robot)
+			s = 0                
+            #WHILE#############################################################
+			while s < (len(self.multi_robot_nodes[0])-1):
+				print ("robot_assign ", robot_assign)
+				print "WHILE with s: ", s, "len is: ", (len(self.multi_robot_nodes[0])-1)
+            	#ROBOT#############################################################
+				for robot in range(self.robots):                
+					print "Robot:", robot
+            	 	   
+           		 #----------------THREADING----------------------    
+					#start the multi-threaded ants, calls ant.run() in a new thread
+#					for ant in self.ants:
+#					ant.start()
+#					
+#					#wait until the ants are finished, before moving on to modifying shared resources
+#					for ant in self.ants:
+#						ant.join()
+           		 #----------------THREADING----------------------  
+            	    
+            	    
+					############################ANTS###############################
+					for ant in self.ants:	
+						ant.run(robot, assign)
+						#update ant_updated_pheromone_map with this ant's constribution of pheromones along its route
+						self.update_ant_updated_pheromone_map(ant, robot)
+						
+						#if we haven't seen any paths yet, then populate for comparisons later
+						if not self.shortest_distance:
+							self.shortest_distance = ant.get_dist_traveled()
+						
+						if not self.best_route_seen:
+							self.best_route_seen, self.best_path_seen = ant.get_route()
+						dists.append(self.shortest_distance)
+            	  	  
+						#if we see a shorter path, then save for return
+						if ant.get_dist_traveled() < self.shortest_distance:
+							self.shortest_distance = ant.get_dist_traveled()
+							print ("Shortest Distance is %s " % self.shortest_distance )
+							self.best_route_seen, self.best_path_seen = ant.get_route()
+							#print ( "With the Route %s "  %self.best_route_seen)
+							#print ( "With the Path %s "  %self.best_path_seen)
+						dists.append(self.shortest_distance)
+	
+            	    ############################ANTS###############################
+            	    
+					#print ( "With the Route ", robot,  self.best_route_seen)                    
+					#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
+					self.ph_map_update(robot)
+            	    
+            	    #Soft Assigning Tasks to specific Robots based on Pheromone Values 
+					self.soft_assign(assign, robot_assign, robot)
+		    	          
+					#flag when first pass is done
+					if self.first_pass:
+						self.first_pass = False
 					
-					#if we haven't seen any paths yet, then populate for comparisons later
-					if not self.shortest_distance:
-						self.shortest_distance = ant.get_dist_traveled()
+					#reset all ANTS for next robot
+					self.ants_init(self.start, robot)
 					
-					if not self.best_route_seen:
-						self.best_route_seen, self.best_path_seen = ant.get_route()
-					dists.append(self.shortest_distance)
-              	  
-					#if we see a shorter path, then save for return
-					if ant.get_dist_traveled() < self.shortest_distance:
-						self.shortest_distance = ant.get_dist_traveled()
-						print ("Shortest Distance is %s " % self.shortest_distance )
-						self.best_route_seen, self.best_path_seen = ant.get_route()
-						#print ( "With the Route %s "  %self.best_route_seen)
-						#print ( "With the Path %s "  %self.best_path_seen)
-					dists.append(self.shortest_distance)
-
-                ############################ANTS###############################
-                
-				#print ( "With the Route ", robot,  self.best_route_seen)                    
-				#decay current pheromone values and add all pheromone values we saw during traversal (from ant_updated_pheromone_map)
-				self.ph_map_update(robot)
-                
-                #Soft Assigning Tasks to specific Robots based on Pheromone Values 
-				self.soft_assign(assign, robot_assign, robot)
-		              
-				#flag when first pass is done
-				if self.first_pass:
-					self.first_pass = False
-				
-				#reset all ANTS for next robot
-				self.ants_init(self.start, robot)
-				
-				#reset ant_updated_pheromone_map to record pheromones for ants on next pass
-				#print ("Main ", len(self.multi_robot_nodes))
-				#self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
+					#reset ant_updated_pheromone_map to record pheromones for ants on next pass
+					#print ("Main ", len(self.multi_robot_nodes))
+					#self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
 				#ROBOT#############################################################
-                
-                
-				#translate shortest path back into callers node id's
+				print ("robot_assign ", robot_assign)
+				s = 0
+				for k in robot_assign:
+					s = s + len(k)
+            #WHILE#############################################################
+            	    
+			#translate shortest path back into callers node id's
 			print ("robot_assign ", robot_assign)    
 			ret = []
 			for id in self.best_route_seen:
 				ret.append(self.id_to_key[id])
 			route.append(ret)
-            #ITERATION#############################################################
+        #ITERATION#############################################################
             
 		return route, dists, self.best_path_seen
 
