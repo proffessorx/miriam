@@ -105,14 +105,14 @@ class ant_colony:
             alpha : Ph constant      (0.1 -- 0.9)
             beta : distance constant (0.1 -- 5.0)
 			"""		
-			print ("RUN", assigned)
+			#print ("RUN", assigned)
 			if len(assigned) is not 0:
 				for x in assigned:
-					print x
+					#print x
 					self.pickup_locations.remove(x)
 					#print ("removed &&&", assigned)
 
-			print ("Pickup :::", self.pickup_locations)    
+			#print ("Pickup :::", self.pickup_locations)    
 			while self.pickup_locations:                
 				next = self.pick_path(robot)
 				#print ("This is  ", next)
@@ -251,7 +251,7 @@ class ant_colony:
 # INITIALIZATION METHOD:::
 # =============================================================================
 		
-	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=2, alpha=0.5,
+	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
               beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=1):
         
 		"""
@@ -411,7 +411,22 @@ class ant_colony:
 # =============================================================================
 # Main Functions :::
 # =============================================================================
+	
+	def rdp(self, robot_assign):
+		D = 0
+		pp = []#print len(robot_assign)
+		for r in range(len(robot_assign)):
+			st = self.multi_robot_nodes[r][0]
+			for e in range(len(robot_assign[r])):                
+				en = self.multi_robot_nodes[r][robot_assign[r][e]] #robot_assign[0][0]           
+				#print st, en, r
+				temp_d, temp_pp = self.distance_callback(st, en)
+				D += temp_d
+				pp.append(temp_pp)
+				#print D
+		return D, pp
 		
+        
 	def get_distance(self, start, end, robot):
 		#print("get_distance")
 		"""
@@ -550,7 +565,7 @@ class ant_colony:
 						temp[r] = r, st, en, self.pheromone_map[r][st][en]						
 					if (temp[r] is not 0) and (temp[r][3] is not self.pheromone_map[r][st][en]) and (sec_temp[r] < self.pheromone_map[r][st][en]) and temp[r][1] is not en:
 						sec_temp[r] = r, st, en, self.pheromone_map[r][st][en]
-		print ("Update : ", temp[robot], "2nd. ", sec_temp[robot])
+		#print ("Update : ", temp[robot], "2nd. ", sec_temp[robot])
 #		if robot is 2:    
 		#print ("Update : ", temp[robot])
 		return temp[robot], sec_temp[robot]        
@@ -569,17 +584,17 @@ class ant_colony:
 		elif  first_assign[2] in assign and sec_assign[2] not in assign:
 			first_assign = sec_assign
 			assign.append(first_assign[2])
-			print first_assign[2]
+			#print first_assign[2]
 			robot_assign[robot].append(assign[-1])
 		elif first_assign[3] > sec_assign[3]/2 :
 			assign.append(first_assign[2])
-			print first_assign[2]
+			#print first_assign[2]
 			robot_assign[robot].append(assign[-1])
 		elif assign is []:
 			assign = None
 		#robot_assign[robot].append(assign[robot])
         #assign[robot] = first_assign[2]                
-		print ("assign ", assign)
+		#print ("assign ", assign)
 		#robot_assign[robot].append(assign[robot]) 		
 
             
@@ -603,8 +618,8 @@ class ant_colony:
 			s = 0                
             #WHILE#############################################################
 			while s < (len(self.multi_robot_nodes[0])-1):
-				print ("robot_assign ", robot_assign)
-				print "WHILE with s: ", s, "len is: ", (len(self.multi_robot_nodes[0])-1)
+				#print ("robot_assign ", robot_assign)
+				#print "WHILE with s: ", s, "len is: ", (len(self.multi_robot_nodes[0])-1)
             	#ROBOT#############################################################
 				for robot in range(self.robots):                
 					print "Robot:", robot
@@ -663,14 +678,18 @@ class ant_colony:
 					#print ("Main ", len(self.multi_robot_nodes))
 					#self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
 				#ROBOT#############################################################
-				print ("robot_assign ", robot_assign)
+				#print ("robot_assign ", robot_assign)                             
 				s = 0
 				for k in robot_assign:
 					s = s + len(k)
             #WHILE#############################################################
             	    
 			#translate shortest path back into callers node id's
-			print ("robot_assign ", robot_assign)    
+			print ("robot_assign ", robot_assign)
+
+			D, pp = self.rdp(robot_assign)
+			print ("This Iteration Total Distrance is : ", D)
+			#print ("The Corrresponding Path Plan is : ", pp)
 			ret = []
 			for id in self.best_route_seen:
 				ret.append(self.id_to_key[id])
