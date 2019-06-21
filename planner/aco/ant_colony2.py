@@ -252,7 +252,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=1):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
         
 		"""
         Initializing an ANT Colony. 
@@ -576,7 +576,8 @@ class ant_colony:
 	def soft_assign(self, assign, robot_assign, robot):
 		#print ("SOFT ASSIGN")
 		"""
-		 
+		Assigns one Task to the corresponding Robot
+        Also, has a potential backup as a second assign to remove First Best Pick Scenario everytime
 		"""
 		first_assign, sec_assign = self.update_pickup_locations(robot)
 		if first_assign[2] in assign and sec_assign[2] in assign:
@@ -610,10 +611,13 @@ class ant_colony:
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		dists = []
+		answer_robot_assign = None
+		answer_distance = None
 		route = []
-		robot_assign = [[], [], []]
+		#robot_assign = [[], [], []]
         #ITERATION#############################################################
-		for _ in range(self.iterations):         
+		for _ in range(self.iterations):
+			robot_assign = [[], [], []]
 			assign = []
 			s = 0                
             #WHILE#############################################################
@@ -622,7 +626,7 @@ class ant_colony:
 				#print "WHILE with s: ", s, "len is: ", (len(self.multi_robot_nodes[0])-1)
             	#ROBOT#############################################################
 				for robot in range(self.robots):                
-					print "Robot:", robot
+					#print "Robot:", robot
             	 	   
            		 #----------------THREADING----------------------    
 					#start the multi-threaded ants, calls ant.run() in a new thread
@@ -652,7 +656,7 @@ class ant_colony:
 						#if we see a shorter path, then save for return
 						if ant.get_dist_traveled() < self.shortest_distance:
 							self.shortest_distance = ant.get_dist_traveled()
-							print ("Shortest Distance is %s " % self.shortest_distance )
+							#print ("Shortest Distance is %s " % self.shortest_distance )
 							self.best_route_seen, self.best_path_seen = ant.get_route()
 							#print ( "With the Route %s "  %self.best_route_seen)
 							#print ( "With the Path %s "  %self.best_path_seen)
@@ -683,20 +687,28 @@ class ant_colony:
 				for k in robot_assign:
 					s = s + len(k)
             #WHILE#############################################################
-            	    
-			#translate shortest path back into callers node id's
+            
+            
+            #TODO Iteration Check which is shortest Distance 
 			print ("robot_assign ", robot_assign)
-
 			D, pp = self.rdp(robot_assign)
 			print ("This Iteration Total Distrance is : ", D)
 			#print ("The Corrresponding Path Plan is : ", pp)
+
+			if answer_distance is None or answer_distance > D:
+				answer_distance = D
+				answer_robot_assign = robot_assign
+				answer_path_plan = pp
+				print "shortest distance"
+                
 			ret = []
 			for id in self.best_route_seen:
 				ret.append(self.id_to_key[id])
 			route.append(ret)
         #ITERATION#############################################################
-            
-		return route, dists, self.best_path_seen
+
+		    
+		return answer_distance, answer_robot_assign, answer_path_plan, dists
 
 # =============================================================================
 # Inputs Section:::
@@ -774,10 +786,10 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 
 #...that will find the optimal solution with ACO
 aco_time = time.time()
-answer, dists, path_plan = colony.main()
-print "Best Route: " , answer
+answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph = colony.main()
+print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
 #print "Path Plan:  " , path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 #print ("dists, " , dists)
-plt.plot(dists)
+plt.plot(for_graph)
 plt.show()
