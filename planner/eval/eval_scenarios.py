@@ -7,7 +7,7 @@ sys.path.append(os.path.realpath(os.path.join(__file__,"../../../")))
 from planner.tcbs.plan import plan as plan_tcbs, generate_config
 #for plotting#from planner.eval.display import plot_results
 from planner.greedy.greedy import plan_greedy
-from planner.aco.aco_try import plan_aco
+#from planner.aco.aco_try import plan_aco
 #from tools import load_map, get_map_str // get_map_str not defined in the header file
 from tools import load_map
 import time
@@ -38,13 +38,13 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     print("--- Time taken is %s seconds ---" % (time.time() - greedy_time))
     
     
-    print("-----------------------ACO-TRY-----------------------")
-    aco_time = time.time()
-    minlp_res_agent_job, minlp_res_paths  = plan_aco(agent_pos, jobs, grid, config)
-    print("agent_job: " + str(minlp_res_agent_job))
-    #print("paths: " + str(res_paths))
-    costs_aco = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
-    print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
+#    print("-----------------------ACO-TRY-----------------------")
+#    aco_time = time.time()
+#    minlp_res_agent_job, minlp_res_paths  = plan_aco(agent_pos, jobs, grid, config)
+#    print("agent_job: " + str(minlp_res_agent_job))
+#    #print("paths: " + str(res_paths))
+#    costs_aco = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
+#    print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
     
     
     print("-----------------------TCBS-----------------------")
@@ -221,12 +221,12 @@ def ff():
 def o():
 
     _map = load_map('o.png')
-    agent_pos = [(1, 3),
-#                 (6, 1),
+    agent_pos = [(1, 5),
+#                 (1, 6),
 #                 (2, 2),
                  (1, 1)]
     jobs = [((7, 4), (0, 4), 4),
-            ((2, 2), (3, 7), 3),
+#            ((2, 2), (3, 7), 3),
             ((4, 5), (7, 5), 0),
             ((4, 4), (6, 6), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)

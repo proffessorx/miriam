@@ -17,7 +17,7 @@ import time
 import numpy as np
 import math
 from matplotlib import pyplot as plt
-from planner.common import path
+#from planner.common import path
 from tools import load_map
 import networkx as nx
 
@@ -394,6 +394,7 @@ class ant_colony:
 				self.start = 0
 				check(robot_nodes[0])
 			else: #TODO
+				'''When Multiple starting points/Robots are givcen'''
 				self.start = None
 				robot_nodes = []
 				temp = {}       
@@ -578,16 +579,17 @@ class ant_colony:
 		"""
 		Assigns one Task to the corresponding Robot
         Also, has a potential backup as a second assign to remove First Best Pick Scenario everytime
-		"""
+		"""       
 		first_assign, sec_assign = self.update_pickup_locations(robot)
-		if first_assign[2] in assign and sec_assign[2] in assign:
+		print sec_assign
+		if sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] in assign:
 			print "yes"
-		elif  first_assign[2] in assign and sec_assign[2] not in assign:
+		elif  sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] not in assign:
 			first_assign = sec_assign
 			assign.append(first_assign[2])
 			#print first_assign[2]
 			robot_assign[robot].append(assign[-1])
-		elif first_assign[3] > sec_assign[3]/2 :
+		elif sec_assign is not 0 and first_assign[3] > sec_assign[3]/2 :
 			assign.append(first_assign[2])
 			#print first_assign[2]
 			robot_assign[robot].append(assign[-1])
