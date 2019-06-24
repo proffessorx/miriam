@@ -581,9 +581,9 @@ class ant_colony:
         Also, has a potential backup as a second assign to remove First Best Pick Scenario everytime
 		"""       
 		first_assign, sec_assign = self.update_pickup_locations(robot)
-		print sec_assign
+		#print sec_assign
 		if sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] in assign:
-			print "yes"
+			print "continue"
 		elif  sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] not in assign:
 			first_assign = sec_assign
 			assign.append(first_assign[2])
@@ -613,17 +613,15 @@ class ant_colony:
 		Runs ANTS, collects their returns and updates pheromone map
 		"""
 		dists = []
-		answer_robot_assign = None
 		answer_distance = None
-		route = []
 		#robot_assign = [[], [], []]
         #ITERATION#############################################################
 		for _ in range(self.iterations):
 			robot_assign = [[], [], []]
 			assign = []
-			s = 0                
+			w = 0                
             #WHILE#############################################################
-			while s < (len(self.multi_robot_nodes[0])-1):
+			while w < (len(self.multi_robot_nodes[0])-1):
 				#print ("robot_assign ", robot_assign)
 				#print "WHILE with s: ", s, "len is: ", (len(self.multi_robot_nodes[0])-1)
             	#ROBOT#############################################################
@@ -685,9 +683,9 @@ class ant_colony:
 					#self.ant_updated_pheromone_map.append(self.matrix_init(len(self.multi_robot_nodes)))
 				#ROBOT#############################################################
 				#print ("robot_assign ", robot_assign)                             
-				s = 0
+				w = 0
 				for k in robot_assign:
-					s = s + len(k)
+					w = w + len(k)
             #WHILE#############################################################
             
             
@@ -701,12 +699,8 @@ class ant_colony:
 				answer_distance = D
 				answer_robot_assign = robot_assign
 				answer_path_plan = pp
-				print "shortest distance"
+				#print "shortest distance"
                 
-			ret = []
-			for id in self.best_route_seen:
-				ret.append(self.id_to_key[id])
-			route.append(ret)
         #ITERATION#############################################################
 
 		    
@@ -765,7 +759,7 @@ def cost(a, b):
         return np.Inf
 
 jobs = [((7, 4), (0, 4), 4),
-        ((2, 2), (3, 7), 3),
+#        ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
@@ -790,7 +784,7 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 aco_time = time.time()
 answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph = colony.main()
 print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
-#print "Path Plan:  " , path_plan
+#print "Path Plan:  " , answer_path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 #print ("dists, " , dists)
 plt.plot(for_graph)
