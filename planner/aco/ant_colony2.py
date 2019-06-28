@@ -112,7 +112,7 @@ class ant_colony:
 					self.pickup_locations.remove(x)
 					#print ("removed &&&", assigned)
 
-			#print ("Pickup :::", self.pickup_locations)    
+			#print ("Pickup :::", self.pickup_locations, robot)    
 			while self.pickup_locations:                
 				next = self.pick_path(robot)
 				#print ("This is  ", next)
@@ -133,6 +133,7 @@ class ant_colony:
 			if self.first_pass:
 				import random
 				return random.choice(self.pickup_locations)
+            #TODO Seed instead of random
 			
 			attractiveness = dict()
 			sum_total = 0.0
@@ -293,10 +294,9 @@ class ant_colony:
 
 		def check(multi_nodes):
 			#create internal mapping and mapping for return to caller
-			self.id_to_key, robot_nodes = self.nodes_init(multi_nodes)
-			#print ("here ", robot_nodes[1])
+			self.id_to_key, robot_nodes = self.nodes_init(multi_nodes)              
 			#self.id_to_key.append(id_key)
-			self.multi_robot_nodes.append(robot_nodes)
+			self.multi_robot_nodes.append(robot_nodes)            
 			#create matrix to hold distance calculations between nodes
 			#self.distance_matrix = self.matrix_init(len(multi_robot_nodes))
 			self.distance_matrix.append(self.matrix_init(len(multi_nodes)))
@@ -374,9 +374,12 @@ class ant_colony:
 		self.path_matrix = []
 		self.pheromone_map = []
 		self.ant_updated_pheromone_map = []
-		self.multi_robot_nodes = []
+		self.multi_robot_nodes = []     
 		#self.id_to_key = []
-        
+		
+		print "Start: ", start
+		global rob_pos
+		rob_pos = start
         #start
 		robot_nodes = []
 		if start is None:
@@ -394,7 +397,7 @@ class ant_colony:
 				self.start = 0
 				check(robot_nodes[0])
 			else: #TODO
-				'''When Multiple starting points/Robots are givcen'''
+				'''When Multiple starting points/Robots are given'''
 				self.start = None
 				robot_nodes = []
 				temp = {}       
@@ -407,23 +410,30 @@ class ant_colony:
 				for i in robot_nodes:
 					check(i)
 					#instead of assigning directly to len(robot_nodes) as useful for loop counter
-					self.robots+=1 
-				                
-# =============================================================================
+					self.robots+=1
+
+#====================================================================
 # Main Functions :::
 # =============================================================================
 	
-	def rdp(self, robot_assign):
+	def rdp(self, robot_assign, nodes, robot):
 		D = 0
-		pp = []#print len(robot_assign)
+		pp = []#print len(robot_assign)        
+
+		st = [0]
 		for r in range(len(robot_assign)):
-			st = self.multi_robot_nodes[r][0]
-			for e in range(len(robot_assign[r])):                
-				en = self.multi_robot_nodes[r][robot_assign[r][e]] #robot_assign[0][0]           
+			st = nodes[r][0]
+            
+			for e in range(len(robot_assign[r])):
+				if e is 1:
+					#print "change_places", en[1]
+					st[0] = en[1]
+				en = nodes[r][robot_assign[r][e]] #robot_assign[0][0]
 				#print st, en, r
 				temp_d, temp_pp = self.distance_callback(st, en)
 				D += temp_d
 				pp.append(temp_pp)
+				#print "this: "#, st, nodes[r] 
 				#print D
 		return D, pp
 		
@@ -436,7 +446,6 @@ class ant_colony:
 		if a distance not calculated before, then it is populated in distance_matrix and returned
 		if a distance called before, then its value is returned from distance_matrix
 		"""
-		#print(self.distance_matrix[i][start][end])
 		if not self.distance_matrix[robot][start][end]:
 			#print ("here " , self.multi_robot_nodes[start])
 			dist, pp = self.distance_callback(self.multi_robot_nodes[robot][start], self.multi_robot_nodes[robot][end])
@@ -479,7 +488,7 @@ class ant_colony:
 			ret.append([float(value) for x in range(size)])
 		return ret
 	
-	def ants_init(self, start, robot = None):
+	def ants_init(self, start, robot_assign = None, robot = None):
 		#print ("ants_init")
 		"""
 		Initializing ANTS
@@ -487,6 +496,13 @@ class ant_colony:
         on Normal passes, just call __init__ on each ANT to reset them
         #Iteration number of times
 		"""
+		#print "ANT_INIT: ", robot_assign #self.multi_robot_nodes
+		if robot_assign is not None and len(robot_assign[robot]) is not 0:
+			for x in robot_assign[robot]:
+				self.multi_robot_nodes[robot][0][0] = self.multi_robot_nodes[robot][x][1]
+				#print "change start: "#, robot_assign, #self.multi_robot_nodes, #x, self.multi_robot_nodes[robot][0][0], self.multi_robot_nodes[robot][x][1]
+			#self
+        
 		#allocate new ants on the first pass
 		#print ("Robots ", self.robots)
         #TODO Here I have to give Assigned Tasks to Robots
@@ -502,13 +518,14 @@ class ant_colony:
 #			print ("for the robot: ", robot, "new multi_robot_keys  ", temp)
             
 		if self.first_pass:
+			#print "FIRST PASS############################"            
 			return [self.ant(start, self.multi_robot_nodes[self.robots].keys(), self.robots, self.pheromone_map, self.get_distance,
 				self.alpha, self.beta, first_pass=True) for x in range(self.ant_count)]
 		#else, just reset them to use on another pass
 		for ant in self.ants:
 			#print ("RESET:::::::::::::::::::::::::::: ")
 			ant.__init__(start, self.multi_robot_nodes[self.robots-1].keys(), self.robots, self.pheromone_map, self.get_distance, self.alpha, self.beta)
-	
+
 	def ph_map_update(self, robot):
 		#print("ph_map_update")
 		"""
@@ -587,15 +604,17 @@ class ant_colony:
 		elif  sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] not in assign:
 			first_assign = sec_assign
 			assign.append(first_assign[2])
-			#print first_assign[2]
+			#print "ASSIGNED", first_assign[2]
 			robot_assign[robot].append(assign[-1])
 		elif sec_assign is not 0 and first_assign[3] > sec_assign[3]/2 :
 			assign.append(first_assign[2])
-			#print first_assign[2]
+			#print "ASSIGNED", first_assign[2]
 			robot_assign[robot].append(assign[-1])
 		elif assign is []:
 			assign = None
-		#robot_assign[robot].append(assign[robot])
+		        
+		
+        #robot_assign[robot].append(assign[robot])
         #assign[robot] = first_assign[2]                
 		#print ("assign ", assign)
 		#robot_assign[robot].append(assign[robot]) 		
@@ -614,6 +633,7 @@ class ant_colony:
 		"""
 		dists = []
 		answer_distance = None
+		#global orig_robot_nodes           
 		#robot_assign = [[], [], []]
         #ITERATION#############################################################
 		for _ in range(self.iterations):
@@ -673,10 +693,10 @@ class ant_colony:
 		    	          
 					#flag when first pass is done
 					if self.first_pass:
-						self.first_pass = False
+						self.first_pass = False                     
 					
 					#reset all ANTS for next robot
-					self.ants_init(self.start, robot)
+					self.ants_init(self.start, robot_assign, robot)
 					
 					#reset ant_updated_pheromone_map to record pheromones for ants on next pass
 					#print ("Main ", len(self.multi_robot_nodes))
@@ -688,11 +708,19 @@ class ant_colony:
 					w = w + len(k)
             #WHILE#############################################################
             
-            
+
+			#change Starting Positions Back to Default before Next Iteration
+			for r in range(robot+1):
+				#print "Robot: ", r                
+				if robot_assign is not None and len(robot_assign[r]) is not 0:
+					#print "NEW ###: ", change_places
+					self.multi_robot_nodes[r][0][0] = agent_pos[r]
+			#print "Reverse Back ", self.multi_robot_nodes
+
             #TODO Iteration Check which is shortest Distance 
 			print ("robot_assign ", robot_assign)
-			D, pp = self.rdp(robot_assign)
-			print ("This Iteration Total Distrance is : ", D)
+			D, pp = self.rdp(robot_assign, self.multi_robot_nodes, robot)
+			print ("This Iteration Total Distance is : ", D)
 			#print ("The Corrresponding Path Plan is : ", pp)
 
 			if answer_distance is None or answer_distance > D:
@@ -765,7 +793,7 @@ jobs = [((7, 4), (0, 4), 4),
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
 #print ("These are the Tasks " , test_nodes)
 
-#ROBOT STARTING POSTION #TODO
+#ROBOT STARTING POSTION
 agent_pos = [(1, 5), (1, 6), (1, 1)]
 robot_pos = []
 for x in agent_pos:
@@ -774,6 +802,7 @@ for x in agent_pos:
     lst.append(None)
     robot_pos.append(lst)
 print robot_pos
+#rob_pos = robot_pos
 
 #robot_pos=[(1,1), None]
 
@@ -784,8 +813,35 @@ colony = ant_colony(test_nodes, distance, robot_pos)
 aco_time = time.time()
 answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph = colony.main()
 print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
-#print "Path Plan:  " , answer_path_plan
+print "Path Plan:  " , answer_path_plan #TODO collisons MILP
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 #print ("dists, " , dists)
 plt.plot(for_graph)
 plt.show()
+
+
+###########COSTS###################TODO Costs
+
+def get_costs(paths, jobs, agent_job, display=True):
+    if not paths:
+        return np.inf
+    costs = np.zeros(len(jobs))
+    for ia, paths_for_agent in enumerate(paths):
+        ip = 0
+        print "get_costs : ", paths_for_agent
+        for ij in agent_job[ia]:
+            if paths_for_agent[ip][-1][0:2] == jobs[ij][1]:  # alloc job
+                costs[ij] = paths_for_agent[ip][-1][2]  # t
+            elif paths_for_agent[ip + 1][-1][0:2] == jobs[ij][1]:  # not pre-alloc
+                ip += 1
+                costs[ij] = paths_for_agent[ip][-1][2]  # t
+            else:
+                assert False, "Problem in assignment"
+            ip += 2
+    print("Costs:\n(per job:)")
+    print(costs)
+    print("(total:)")
+    print(sum(costs))
+    return sum(costs)
+
+#get_costs(answer_path_plan, jobs, answer_robot_assignments, False)

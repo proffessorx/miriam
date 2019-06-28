@@ -33,7 +33,7 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     greedy_time = time.time()
     minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)
     print("agent_job: " + str(minlp_res_agent_job))
-    #print("paths: " + str(minlp_res_paths))
+    print("paths: " + str(minlp_res_paths))
     costs_minlp = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
     print("--- Time taken is %s seconds ---" % (time.time() - greedy_time))
     
