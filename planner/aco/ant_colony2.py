@@ -72,7 +72,7 @@ class ant_colony:
 			"""
 			#for THREADING
 			#Thread.__init__(self)
-			
+			#print "ANT_INIT"
 			self.init_location = init_location
 			self.pickup_locations = pickup_locations		
 			self.rob = rob
@@ -121,7 +121,6 @@ class ant_colony:
 			self.tour_complete = True
 			            
 		def pick_path(self, robot):
-            #TODO
 			"""
 			Path Selection in ACO
             
@@ -134,7 +133,7 @@ class ant_colony:
 				import random
 				return random.choice(self.pickup_locations)
             #TODO Seed instead of random
-			
+			#print "Here::: ", self.pheromone_map			
 			attractiveness = dict()
 			sum_total = 0.0
 			#print ("pickup_locations: ", robot, self.pickup_locations)
@@ -144,6 +143,7 @@ class ant_colony:
 				#NOTE: do all calculations as float, otherwise we get integer division at times for really hard to track down bugs
 				#print ("here: ", self.pheromone_map[robot][self.location][possible_next_location])
 				pheromone_amount = float(self.pheromone_map[robot][self.location][possible_next_location])
+				#print pheromone_amount
 				dist, pp = self.distance_callback(self.location, possible_next_location, robot)
 				distance = float(dist)
 				
@@ -253,7 +253,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=3):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=15):
         
 		"""
         Initializing an ANT Colony. 
@@ -362,6 +362,40 @@ class ant_colony:
 			self.best_route_seen = None
 			self.best_path_seen = None
 
+		def deal_matrices(start, nodes):
+			#print "Deal_Matrices"
+			robot_nodes = []		            
+			if start is None:
+				self.start = 0
+				robot_nodes = nodes            
+			else:
+				if start[1] is None:    
+					''' When ONE starting Node/Robot is Given'''
+					self.start = None
+					#print ("Starting Point(0) and Tasks(1,2,..)")
+					nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
+					nodes.update( {0: start} )
+					robot_nodes.append(nodes)
+					self.robots = len(robot_nodes)
+					self.start = 0
+					check(robot_nodes[0])
+				else: 
+					'''When Multiple starting points/Robots are given'''
+					#print "Deal Matrices Correct"
+					self.start = None
+					robot_nodes = []
+					temp = {}       
+					for st in start:
+						temp = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
+						temp.update( {0: st} )
+						robot_nodes.append(temp)
+					self.robots = 0
+					self.start = 0                
+					for i in robot_nodes:
+						check(i)
+						#instead of assigning directly to len(robot_nodes) as useful for loop counter
+						self.robots+=1
+
 		#nodes
 		if type(nodes) is not dict:
 			raise TypeError("nodes must be dict")
@@ -377,42 +411,13 @@ class ant_colony:
 		self.multi_robot_nodes = []     
 		#self.id_to_key = []
 		
-		print "Start: ", start
+		#print "Start: ", start
 		global rob_pos
 		rob_pos = start
-        #start
-		robot_nodes = []
-		if start is None:
-			self.start = 0
-			robot_nodes = nodes            
-		else:
-			if start[1] is None:    
-				''' When ONE starting Node/Robot is Given'''
-				self.start = None
-				#print ("Starting Point(0) and Tasks(1,2,..)")
-				nodes = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
-				nodes.update( {0: start} )
-				robot_nodes.append(nodes)
-				self.robots = len(robot_nodes)
-				self.start = 0
-				check(robot_nodes[0])
-			else: #TODO
-				'''When Multiple starting points/Robots are given'''
-				self.start = None
-				robot_nodes = []
-				temp = {}       
-				for st in start:
-					temp = { i+1 : nodes[i] for i in range(0, len(nodes) ) }
-					temp.update( {0: st} )
-					robot_nodes.append(temp)
-				self.robots = 0
-				self.start = 0                
-				for i in robot_nodes:
-					check(i)
-					#instead of assigning directly to len(robot_nodes) as useful for loop counter
-					self.robots+=1
-
-#====================================================================
+		deal_matrices(start, nodes)
+		#print self.distance_matrix
+                        
+ #=============================================================================
 # Main Functions :::
 # =============================================================================
 	
@@ -502,20 +507,6 @@ class ant_colony:
 				self.multi_robot_nodes[robot][0][0] = self.multi_robot_nodes[robot][x][1]
 				#print "change start: "#, robot_assign, #self.multi_robot_nodes, #x, self.multi_robot_nodes[robot][0][0], self.multi_robot_nodes[robot][x][1]
 			#self
-        
-		#allocate new ants on the first pass
-		#print ("Robots ", self.robots)
-        #TODO Here I have to give Assigned Tasks to Robots
-#		temp = self.multi_robot_nodes[self.robots-1].keys()
-#		if assignments is not None:
-#			print ("assignments  ", self.multi_robot_nodes[self.robots-1].keys())
-#			if type(assignments) is int:
-#				temp.remove(assignments)
-#			else:
-#				for x in assignments:
-#					#print("removing ", x)
-#					temp.remove(x)                
-#			print ("for the robot: ", robot, "new multi_robot_keys  ", temp)
             
 		if self.first_pass:
 			#print "FIRST PASS############################"            
@@ -571,6 +562,7 @@ class ant_colony:
 		"""
 
 		"""
+		#print self.pheromone_map
 		_, tasks = self.nodes_init(test_nodes, 1)
 		temp = [0] * self.robots
 		sec_temp = [0] * self.robots        
@@ -587,9 +579,6 @@ class ant_colony:
 #		if robot is 2:    
 		#print ("Update : ", temp[robot])
 		return temp[robot], sec_temp[robot]        
-		#TODO Here I have to Assign Tasks to Robots
-		#print ("here", robot,  tasks[4])
-		#print ("ROBOT : ", tasks, robot,  self.ant_updated_pheromone_map[robot])
 
 	def soft_assign(self, assign, robot_assign, robot):
 		#print ("SOFT ASSIGN")
@@ -604,7 +593,7 @@ class ant_colony:
 		elif  sec_assign is not 0 and first_assign[2] in assign and sec_assign[2] not in assign:
 			first_assign = sec_assign
 			assign.append(first_assign[2])
-			#print "ASSIGNED", first_assign[2]
+			#print "ASSIGNED", first_assign
 			robot_assign[robot].append(assign[-1])
 		elif sec_assign is not 0 and first_assign[3] > sec_assign[3]/2 :
 			assign.append(first_assign[2])
@@ -639,7 +628,8 @@ class ant_colony:
 		for _ in range(self.iterations):
 			robot_assign = [[], [], []]
 			assign = []
-			w = 0                
+			w = 0
+            
             #WHILE#############################################################
 			while w < (len(self.multi_robot_nodes[0])-1):
 				#print ("robot_assign ", robot_assign)
@@ -669,9 +659,9 @@ class ant_colony:
 						if not self.shortest_distance:
 							self.shortest_distance = ant.get_dist_traveled()
 						
-						if not self.best_route_seen:
-							self.best_route_seen, self.best_path_seen = ant.get_route()
-						dists.append(self.shortest_distance)
+#						if not self.best_route_seen:
+#							self.best_route_seen, self.best_path_seen = ant.get_route()
+#						dists.append(self.shortest_distance)
             	  	  
 						#if we see a shorter path, then save for return
 						if ant.get_dist_traveled() < self.shortest_distance:
@@ -717,7 +707,7 @@ class ant_colony:
 					self.multi_robot_nodes[r][0][0] = agent_pos[r]
 			#print "Reverse Back ", self.multi_robot_nodes
 
-            #TODO Iteration Check which is shortest Distance 
+            # Iteration Check which is shortest Distance 
 			print ("robot_assign ", robot_assign)
 			D, pp = self.rdp(robot_assign, self.multi_robot_nodes, robot)
 			print ("This Iteration Total Distance is : ", D)
@@ -728,7 +718,25 @@ class ant_colony:
 				answer_robot_assign = robot_assign
 				answer_path_plan = pp
 				#print "shortest distance"
-                
+			
+            #Reset Matrices
+            #print self.pheromone_map
+			mat_rob = len(self.pheromone_map)
+			mat_tas_square = len(self.pheromone_map[0])
+			#print mat_rob#self.pheromone_map = []
+			self.pheromone_map = []
+			self.distance_matrix = []
+			self.path_matrix = []
+			self.ant_updated_pheromone_map = []
+            
+			for r in range(mat_rob):
+				self.pheromone_map.append(self.matrix_init(mat_tas_square))
+				self.distance_matrix.append(self.matrix_init(mat_tas_square))
+				self.path_matrix.append(self.matrix_init(mat_tas_square))
+				self.ant_updated_pheromone_map.append(self.matrix_init(mat_tas_square))
+			#print self.pheromone_map                
+            
+
         #ITERATION#############################################################
 
 		    
