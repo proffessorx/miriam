@@ -33,7 +33,12 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     greedy_time = time.time()
     minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)
     print("agent_job: " + str(minlp_res_agent_job))
-    print("paths: " + str(minlp_res_paths))
+    #print("paths: " + str(minlp_res_paths))
+    dist = 0
+    for i in range(len(minlp_res_paths)):
+        for j in minlp_res_paths[i]:
+            dist = dist + len(j)
+    print "Total Distance Covered is ", dist
     costs_minlp = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
     print("--- Time taken is %s seconds ---" % (time.time() - greedy_time))
     
@@ -47,13 +52,18 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
 #    print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
     
     
-    print("-----------------------TCBS-----------------------")
-    tcbs_time = time.time()
-    res_agent_job, res_agent_idle, res_paths = plan_tcbs(agent_pos, jobs, [], [], grid, config, plot=False)
-    print("agent_job: " + str(res_agent_job))
-    #print("paths: " + str(res_paths))
-    costs_tcbs = get_costs(res_paths, jobs, res_agent_job, display)
-    print("--- Time taken is %s seconds ---" % (time.time() - tcbs_time))
+#    print("-----------------------TCBS-----------------------")
+#    tcbs_time = time.time()
+#    res_agent_job, res_agent_idle, res_paths = plan_tcbs(agent_pos, jobs, [], [], grid, config, plot=False)
+#    print("agent_job: " + str(res_agent_job))
+#    #print("paths: " + str(res_paths))
+#    dist = 0
+#    for i in range(len(res_paths)):
+#        for j in res_paths[i]:
+#            dist = dist + len(j)
+#    print "Total Distance Covered is ", dist
+#    costs_tcbs = get_costs(res_paths, jobs, res_agent_job, display)
+#    print("--- Time taken is %s seconds ---" % (time.time() - tcbs_time))
     
 
     # for PLOTTING
@@ -74,12 +84,16 @@ def get_costs(paths, jobs, agent_job, display=True):
     if not paths:
         return np.inf
     costs = np.zeros(len(jobs))
+    #print costs
     for ia, paths_for_agent in enumerate(paths):
+        
         ip = 0
         for ij in agent_job[ia]:
             if paths_for_agent[ip][-1][0:2] == jobs[ij][1]:  # alloc job
+                #print "Double here, ", paths_for_agent[ip]
                 costs[ij] = paths_for_agent[ip][-1][2]  # t
             elif paths_for_agent[ip + 1][-1][0:2] == jobs[ij][1]:  # not pre-alloc
+                #print "here, ", paths_for_agent[ip]
                 ip += 1
                 costs[ij] = paths_for_agent[ip][-1][2]  # t
             else:
@@ -226,7 +240,7 @@ def o():
 #                 (2, 2),
                  (1, 1)]
     jobs = [((7, 4), (0, 4), 4),
-#            ((2, 2), (3, 7), 3),
+            ((2, 2), (3, 7), 3),
             ((4, 5), (7, 5), 0),
             ((4, 4), (6, 6), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)

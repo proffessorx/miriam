@@ -253,7 +253,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=15):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=5):
         
 		"""
         Initializing an ANT Colony. 
@@ -795,7 +795,7 @@ def cost(a, b):
         return np.Inf
 
 jobs = [((7, 4), (0, 4), 4),
-#        ((2, 2), (3, 7), 3),
+        ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
@@ -828,28 +828,27 @@ plt.plot(for_graph)
 plt.show()
 
 
-###########COSTS###################TODO Costs
+###########COSTS###################
 
 def get_costs(paths, jobs, agent_job, display=True):
     if not paths:
         return np.inf
-    costs = np.zeros(len(jobs))
+    #print costs
+    td = []
+    sum_costs = 0
+    previous = None
     for ia, paths_for_agent in enumerate(paths):
-        ip = 0
-        print "get_costs : ", paths_for_agent
-        for ij in agent_job[ia]:
-            if paths_for_agent[ip][-1][0:2] == jobs[ij][1]:  # alloc job
-                costs[ij] = paths_for_agent[ip][-1][2]  # t
-            elif paths_for_agent[ip + 1][-1][0:2] == jobs[ij][1]:  # not pre-alloc
-                ip += 1
-                costs[ij] = paths_for_agent[ip][-1][2]  # t
-            else:
-                assert False, "Problem in assignment"
-            ip += 2
-    print("Costs:\n(per job:)")
-    print(costs)
-    print("(total:)")
-    print(sum(costs))
-    return sum(costs)
+        #print paths_for_agent, previous
+        if paths_for_agent[0][0] == previous:
+            #print "yes ", td[ia-1] 
+            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]) + td[ia-1])
+        else:
+            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]))
+        sum_costs = sum_costs + td[ia]
+        previous = paths_for_agent[1][-1]
+    
+    print("Costs per job: ", td)
+    print("total: ", sum_costs)
+    return sum_costs
 
-#get_costs(answer_path_plan, jobs, answer_robot_assignments, False)
+get_costs(answer_path_plan, jobs, answer_robot_assignments, False)
