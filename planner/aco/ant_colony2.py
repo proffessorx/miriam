@@ -21,6 +21,12 @@ from matplotlib import pyplot as plt
 from tools import load_map
 import networkx as nx
 
+
+###########MAP###################
+
+'''
+
+'''
 map = load_map('o.png')
 #print (map)
 grid = np.repeat(map[:, ::2, np.newaxis], 100, axis=2)
@@ -40,6 +46,30 @@ for n in G.nodes():
         obstacle.append(n)
 
 G.remove_nodes_from(obstacle)
+
+###########COSTS###################
+
+def get_costs(paths, jobs, agent_job, display=True):
+    if not paths:
+        return np.inf
+    #print costs
+    td = []
+    sum_costs = 0
+    previous = None
+    for ia, paths_for_agent in enumerate(paths):
+        #print paths_for_agent, previous
+        if paths_for_agent[0][0] == previous:
+            #print "yes ", td[ia-1] 
+            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]) + td[ia-1])
+        else:
+            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]))
+        sum_costs = sum_costs + td[ia]
+        previous = paths_for_agent[1][-1]
+    
+    print("Costs per job: ", td)
+    print("total: ", sum_costs)
+    return sum_costs
+
 
 # =============================================================================
 # MAIN CLASS :::
@@ -712,7 +742,8 @@ class ant_colony:
 			D, pp = self.rdp(robot_assign, self.multi_robot_nodes, robot)
 			print ("This Iteration Total Distance is : ", D)
 			#print ("The Corrresponding Path Plan is : ", pp)
-
+            
+			get_costs(pp, jobs, robot_assign, False)
 			if answer_distance is None or answer_distance > D:
 				answer_distance = D
 				answer_robot_assign = robot_assign
@@ -797,6 +828,7 @@ def cost(a, b):
 jobs = [((7, 4), (0, 4), 4),
         ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
+        ((2, 3), (7, 1), 0),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
 #print ("These are the Tasks " , test_nodes)
@@ -828,27 +860,5 @@ plt.plot(for_graph)
 plt.show()
 
 
-###########COSTS###################
-
-def get_costs(paths, jobs, agent_job, display=True):
-    if not paths:
-        return np.inf
-    #print costs
-    td = []
-    sum_costs = 0
-    previous = None
-    for ia, paths_for_agent in enumerate(paths):
-        #print paths_for_agent, previous
-        if paths_for_agent[0][0] == previous:
-            #print "yes ", td[ia-1] 
-            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]) + td[ia-1])
-        else:
-            td.append(len(paths_for_agent[0]) + len(paths_for_agent[1]))
-        sum_costs = sum_costs + td[ia]
-        previous = paths_for_agent[1][-1]
-    
-    print("Costs per job: ", td)
-    print("total: ", sum_costs)
-    return sum_costs
 
 get_costs(answer_path_plan, jobs, answer_robot_assignments, False)

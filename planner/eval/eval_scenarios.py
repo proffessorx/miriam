@@ -93,7 +93,7 @@ def get_costs(paths, jobs, agent_job, display=True):
                 #print "Double here, ", paths_for_agent[ip]
                 costs[ij] = paths_for_agent[ip][-1][2]  # t
             elif paths_for_agent[ip + 1][-1][0:2] == jobs[ij][1]:  # not pre-alloc
-                #print "here, ", paths_for_agent[ip]
+                #print "here, ", paths_for_a        ((2, 3), (7, 1), 0),gent[ip]
                 ip += 1
                 costs[ij] = paths_for_agent[ip][-1][2]  # t
             else:
@@ -242,6 +242,7 @@ def o():
     jobs = [((7, 4), (0, 4), 4),
             ((2, 2), (3, 7), 3),
             ((4, 5), (7, 5), 0),
+            ((2, 3), (7, 1), 0),
             ((4, 4), (6, 6), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)
 
