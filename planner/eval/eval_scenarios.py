@@ -5,6 +5,7 @@ import os
 sys.path.append(os.path.realpath(os.path.join(__file__,"../../../")))
 
 from planner.tcbs.plan import plan as plan_tcbs, generate_config
+from planner.aco.ant_colony2 import ant_colony, distance, robot_pos_format, aco_costs 
 #for plotting#from planner.eval.display import plot_results
 from planner.greedy.greedy import plan_greedy
 #from planner.aco.aco_try import plan_aco
@@ -14,7 +15,7 @@ import time
 
 
 def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
-    from planner.milp.milp import plan_milp
+    #from planner.milp.milp import plan_milp
     grid = np.repeat(_map[:, ::2, np.newaxis], 100, axis=2)
 
     config = generate_config()
@@ -39,11 +40,19 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
         for j in minlp_res_paths[i]:
             dist = dist + len(j)
     print "Total Distance Covered is ", dist
-    costs_minlp = get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
+    get_costs(minlp_res_paths, jobs, minlp_res_agent_job, display)
     print("--- Time taken is %s seconds ---" % (time.time() - greedy_time))
     
     
-#    print("-----------------------ACO-TRY-----------------------")
+    print("-----------------------ACO-TRY-----------------------")
+    aco_time = time.time()
+    colony = ant_colony({ i : jobs[i] for i in range(0, len(jobs) ) }, distance, robot_pos_format(agent_pos))
+    answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost = colony.main()
+    print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
+    #print "Path Plan:  " , answer_path_plan
+    print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
+    #print ("dists, " , dists)
+    aco_costs(answer_path_plan, False)
 #    aco_time = time.time()
 #    minlp_res_agent_job, minlp_res_paths  = plan_aco(agent_pos, jobs, grid, config)
 #    print("agent_job: " + str(minlp_res_agent_job))
@@ -52,18 +61,18 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
 #    print("--- Time taken is %s seconds ---" % (time.time() - aco_time))
     
     
-#    print("-----------------------TCBS-----------------------")
-#    tcbs_time = time.time()
-#    res_agent_job, res_agent_idle, res_paths = plan_tcbs(agent_pos, jobs, [], [], grid, config, plot=False)
-#    print("agent_job: " + str(res_agent_job))
-#    #print("paths: " + str(res_paths))
-#    dist = 0
-#    for i in range(len(res_paths)):
-#        for j in res_paths[i]:
-#            dist = dist + len(j)
-#    print "Total Distance Covered is ", dist
-#    costs_tcbs = get_costs(res_paths, jobs, res_agent_job, display)
-#    print("--- Time taken is %s seconds ---" % (time.time() - tcbs_time))
+    print("-----------------------TCBS-----------------------")
+    tcbs_time = time.time()
+    res_agent_job, res_agent_idle, res_paths = plan_tcbs(agent_pos, jobs, [], [], grid, config, plot=False)
+    print("agent_job: " + str(res_agent_job))
+    #print("paths: " + str(res_paths))
+    dist = 0
+    for i in range(len(res_paths)):
+        for j in res_paths[i]:
+            dist = dist + len(j)
+    print "Total Distance Covered is ", dist
+    get_costs(res_paths, jobs, res_agent_job, display)
+    print("--- Time taken is %s seconds ---" % (time.time() - tcbs_time))
     
 
     # for PLOTTING
@@ -240,9 +249,10 @@ def o():
 #                 (2, 2),
                  (1, 1)]
     jobs = [((7, 4), (0, 4), 4),
-            ((2, 2), (3, 7), 3),
-            ((4, 5), (7, 5), 0),
-            ((2, 3), (7, 1), 0),
+#            ((2, 2), (3, 7), 3),
+            ((4, 5), (7, 5), 4),
+#            ((2, 3), (7, 1), 4),
+#            ((4, 6), (3, 6), 5),
             ((4, 4), (6, 6), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)
 

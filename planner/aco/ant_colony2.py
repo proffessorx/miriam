@@ -21,7 +21,6 @@ from matplotlib import pyplot as plt
 from tools import load_map
 import networkx as nx
 
-
 ###########MAP###################
 
 '''
@@ -49,7 +48,7 @@ G.remove_nodes_from(obstacle)
 
 ###########COSTS###################
 
-def get_costs(paths, jobs, agent_job, display=True):
+def aco_costs(paths, display=True):
     if not paths:
         return np.inf
     #print costs
@@ -70,6 +69,57 @@ def get_costs(paths, jobs, agent_job, display=True):
     print("total: ", sum_costs)
     return sum_costs
 
+def lengths(x):
+    if isinstance(x,list):
+        yield len(x)
+        for y in x:
+            for z in lengths(y):
+                yield z
+
+def collision_check(paths): #TODO
+    check_paths = [0] * 3
+    path_list = [[], [], [], []]
+    last = None
+    for ia, paths_for_agent in enumerate(paths):
+        first = paths_for_agent[0][0]
+        if first == last:
+            print "same robot"
+            ia = ia - 1
+        #print "here ", ia, paths_for_agent[0], paths_for_agent[1]
+        for iaa, a in enumerate(paths_for_agent[0]):
+            path_list[ia].append(a)
+        for iaa, b in enumerate(paths_for_agent[1]):
+            path_list[ia].append(b)
+        #print "Path List ", path_list
+        last = paths_for_agent[1][-1]
+    print "Path List ", path_list
+    print "length ", max(lengths(path_list))
+    for num in range(max(lengths(path_list))):
+        #print "Collision Check"
+        #print "Coliisions Detected"
+        try:
+            if path_list[0][num] == path_list[1][num] or path_list[0][num] == path_list[2][num] or path_list[0][num] == path_list[3][num] or path_list[1][num] == path_list[2][num] or path_list[1][num] == path_list[3][num] or path_list[2][num] == path_list[3][num]:
+                print "Coliisions Detected"
+        except IndexError:
+            gotdata = 'null'
+        #print num, path_list[0][num],
+        
+#    longest_length = 0    
+#    if longest_length < len(paths_for_agent[0]):
+#        longest_length = len(paths_for_agent[0])
+#    if longest_length < len(paths_for_agent[1]):
+#        longest_length = len(paths_for_agent[1])
+#    print "Shortest Length: ", longest_length
+#    check_paths = [0] * longest_length
+#    for ia in range(len(paths)):
+#        path_list.append(check_paths)
+#    print "path_list " , path_list
+#    for ia, paths_for_agent in enumerate(paths):
+#        for ij in range(len(paths_for_agent[0])):
+#            path_list[ia][ij] = paths_for_agent[0][ij]
+#    print "path_list 2 " ,path_list
+#    print "Collision Check"
+#    print "Coliisions Detected"
 
 # =============================================================================
 # MAIN CLASS :::
@@ -460,9 +510,9 @@ class ant_colony:
 			st = nodes[r][0]
             
 			for e in range(len(robot_assign[r])):
-				if e is 1:
-					#print "change_places", en[1]
-					st[0] = en[1]
+				if e > 0:
+					#print "change_places", st[e-1]
+					st[e-1] = en[e]
 				en = nodes[r][robot_assign[r][e]] #robot_assign[0][0]
 				#print st, en, r
 				temp_d, temp_pp = self.distance_callback(st, en)
@@ -652,6 +702,7 @@ class ant_colony:
 		"""
 		dists = []
 		answer_distance = None
+		answer_cost = None
 		#global orig_robot_nodes           
 		#robot_assign = [[], [], []]
         #ITERATION#############################################################
@@ -743,12 +794,22 @@ class ant_colony:
 			print ("This Iteration Total Distance is : ", D)
 			#print ("The Corrresponding Path Plan is : ", pp)
             
-			get_costs(pp, jobs, robot_assign, False)
+			cost_iter = aco_costs(pp, False)
+            
+			collision_check(pp)
 			if answer_distance is None or answer_distance > D:
 				answer_distance = D
 				answer_robot_assign = robot_assign
 				answer_path_plan = pp
+				answer_cost = cost_iter
 				#print "shortest distance"
+                
+			if answer_distance is D and answer_cost > cost_iter: 
+				answer_distance = D
+				answer_robot_assign = robot_assign
+				answer_path_plan = pp
+				answer_cost = cost_iter
+				print "Cost Optimized"
 			
             #Reset Matrices
             #print self.pheromone_map
@@ -771,7 +832,7 @@ class ant_colony:
         #ITERATION#############################################################
 
 		    
-		return answer_distance, answer_robot_assign, answer_path_plan, dists
+		return answer_distance, answer_robot_assign, answer_path_plan, dists, answer_cost
 
 # =============================================================================
 # Inputs Section:::
@@ -814,6 +875,7 @@ def path_plan_dist(start, end):
     pp = nx.astar_path(G, start, end, cost)
     #print (pp)
     path_length = len(pp)
+    #path_length_cost = aco_costs(pp, False)
     #print (path_length)
     #path.append(p)
     return float(path_length), pp
@@ -826,39 +888,38 @@ def cost(a, b):
         return np.Inf
 
 jobs = [((7, 4), (0, 4), 4),
-        ((2, 2), (3, 7), 3),
+#        ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
         ((2, 3), (7, 1), 0),
+#        ((4, 6), (3, 6), 5),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
 #print ("These are the Tasks " , test_nodes)
 
 #ROBOT STARTING POSTION
 agent_pos = [(1, 5), (1, 6), (1, 1)]
-robot_pos = []
-for x in agent_pos:
-    lst = []
-    lst.append(x)
-    lst.append(None)
-    robot_pos.append(lst)
-print robot_pos
+def robot_pos_format(agent_pos):
+    robot_pos = []
+    for x in agent_pos:
+        lst = []
+        lst.append(x)
+        lst.append(None)
+        robot_pos.append(lst)
+    return robot_pos
 #rob_pos = robot_pos
 
 #robot_pos=[(1,1), None]
 
 #...we can make a colony of ants...
-colony = ant_colony(test_nodes, distance, robot_pos)
+colony = ant_colony(test_nodes, distance, robot_pos_format(agent_pos))
 
 #...that will find the optimal solution with ACO
 aco_time = time.time()
-answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph = colony.main()
+answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost = colony.main()
 print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
-print "Path Plan:  " , answer_path_plan #TODO collisons MILP
+print "Path Plan:  " , answer_path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
 #print ("dists, " , dists)
 plt.plot(for_graph)
 plt.show()
-
-
-
-get_costs(answer_path_plan, jobs, answer_robot_assignments, False)
+aco_costs(answer_path_plan, False)
