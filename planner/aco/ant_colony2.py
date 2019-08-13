@@ -76,32 +76,38 @@ def lengths(x):
             for z in lengths(y):
                 yield z
 
-def collision_check(paths): #TODO
-    check_paths = [0] * 3
-    path_list = [[], [], [], []]
+def collision_check(paths, robot):
+    path_list = []
+    for rob in range(robot+1):
+        path_list.append([])
+    #print path_list, robot
     last = None
+    same_robot = 0
     for ia, paths_for_agent in enumerate(paths):
+        ia = ia - same_robot
         first = paths_for_agent[0][0]
         if first == last:
-            print "same robot"
+            #print "same robot"
             ia = ia - 1
+            same_robot = same_robot + 1
         #print "here ", ia, paths_for_agent[0], paths_for_agent[1]
         for iaa, a in enumerate(paths_for_agent[0]):
             path_list[ia].append(a)
         for iaa, b in enumerate(paths_for_agent[1]):
             path_list[ia].append(b)
-        #print "Path List ", path_list
         last = paths_for_agent[1][-1]
-    print "Path List ", path_list
-    print "length ", max(lengths(path_list))
+    #print "Path List ", path_list
+    #print "length ", max(lengths(path_list))
     for num in range(max(lengths(path_list))):
-        #print "Collision Check"
         #print "Coliisions Detected"
         try:
             if path_list[0][num] == path_list[1][num] or path_list[0][num] == path_list[2][num] or path_list[0][num] == path_list[3][num] or path_list[1][num] == path_list[2][num] or path_list[1][num] == path_list[3][num] or path_list[2][num] == path_list[3][num]:
-                print "Coliisions Detected"
+                #print "Collisions Detected"
+                return True
         except IndexError:
             gotdata = 'null'
+    return False
+            
         #print num, path_list[0][num],
         
 #    longest_length = 0    
@@ -796,20 +802,23 @@ class ant_colony:
             
 			cost_iter = aco_costs(pp, False)
             
-			collision_check(pp)
-			if answer_distance is None or answer_distance > D:
-				answer_distance = D
-				answer_robot_assign = robot_assign
-				answer_path_plan = pp
-				answer_cost = cost_iter
-				#print "shortest distance"
-                
-			if answer_distance is D and answer_cost > cost_iter: 
-				answer_distance = D
-				answer_robot_assign = robot_assign
-				answer_path_plan = pp
-				answer_cost = cost_iter
-				print "Cost Optimized"
+			collisions = False
+			collisions = collision_check(pp, robot)
+			if collisions:
+				print "Collisions Detected"
+			else:
+				if answer_distance is None or answer_distance > D:
+					answer_distance = D
+					answer_robot_assign = robot_assign
+					answer_path_plan = pp
+					answer_cost = cost_iter
+					#print "shortest distance"	                
+				if answer_distance == D and answer_cost > cost_iter: 
+					answer_distance = D
+					answer_robot_assign = robot_assign
+					answer_path_plan = pp
+					answer_cost = cost_iter
+					print "Cost Optimized"
 			
             #Reset Matrices
             #print self.pheromone_map
@@ -890,7 +899,7 @@ def cost(a, b):
 jobs = [((7, 4), (0, 4), 4),
 #        ((2, 2), (3, 7), 3),
         ((4, 5), (7, 5), 0),
-        ((2, 3), (7, 1), 0),
+#        ((2, 3), (7, 1), 0),
 #        ((4, 6), (3, 6), 5),
         ((4, 4), (6, 6), 1)]
 test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
@@ -917,9 +926,9 @@ colony = ant_colony(test_nodes, distance, robot_pos_format(agent_pos))
 aco_time = time.time()
 answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost = colony.main()
 print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
-print "Path Plan:  " , answer_path_plan
+#print "Path Plan:  " , answer_path_plan
 print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
+aco_costs(answer_path_plan, False)
 #print ("dists, " , dists)
 plt.plot(for_graph)
 plt.show()
-aco_costs(answer_path_plan, False)
