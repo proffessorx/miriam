@@ -1,0 +1,26 @@
+Problem:
+Jobs[((7, 4), (0, 4), 4), ((4, 5), (7, 5), 4), ((4, 4), (6, 6), 1)]
+Agents[(1, 5), (1, 6), (1, 1)]
+-----------------------GREEDY-----------------------
+[(2,), (1,), (0,)]
+agent_job: [(2,), (1,), (0,)]
+Total Distance Covered is  60
+Costs:
+(per job:)
+[19. 10. 12.]
+(total:)
+41.0
+--- Time taken is 1.81167197227 seconds ---
+-----------------------ACO-TRY-----------------------
+Best Route:  [[3, 2], [1], []] with Distance:  39.0
+--- Time taken is 0.0779240131378 seconds ---
+Costs 49
+-----------------------TCBS-----------------------
+agent_job: ((1,), (2,), (0,))
+Total Distance Covered is  60
+Costs:
+(per job:)
+[19. 11. 10.]
+(total:)
+40.0
+--- Time taken is 8.39469003677 seconds ---

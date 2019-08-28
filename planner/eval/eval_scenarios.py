@@ -28,8 +28,8 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     print("Agents" + str(agent_pos))
     # mapstr = get_map_str(grid) // chandra commented, no function defined in header file
     # print(mapstr) // chandra commented
-    print("PLAN")
-
+    #print("PLAN")
+#
     print("-----------------------GREEDY-----------------------")
     greedy_time = time.time()
     minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)
@@ -46,13 +46,15 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     
     print("-----------------------ACO-TRY-----------------------")
     aco_time = time.time()
-    colony = ant_colony({ i : jobs[i] for i in range(0, len(jobs) ) }, distance, robot_pos_format(agent_pos))
-    answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost = colony.main()
+    test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
+    colony = ant_colony(test_nodes, distance, robot_pos_format(agent_pos))
+    answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost, num_coll = colony.main()
     print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
     #print "Path Plan:  " , answer_path_plan
     print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
     #print ("dists, " , dists)
-    aco_costs(answer_path_plan, False)
+    sum_costs = aco_costs(answer_path_plan, False)
+    print "Costs" , sum_costs
 #    aco_time = time.time()
 #    minlp_res_agent_job, minlp_res_paths  = plan_aco(agent_pos, jobs, grid, config)
 #    print("agent_job: " + str(minlp_res_agent_job))
@@ -247,12 +249,15 @@ def o():
     agent_pos = [(1, 5),
                  (1, 6),
 #                 (2, 2),
+#                 (5, 1),
+#                 (4, 7),
                  (1, 1)]
     jobs = [((7, 4), (0, 4), 4),
 #            ((2, 2), (3, 7), 3),
             ((4, 5), (7, 5), 4),
 #            ((2, 3), (7, 1), 4),
-#            ((4, 6), (3, 6), 5),
+#           ((4, 6), (3, 6), 5),
+#           ((5, 6), (0, 7), 1),
             ((4, 4), (6, 6), 1)]
     eval(_map, agent_pos, jobs, 'o.pkl', finished_blocking=False, display=True)
 
