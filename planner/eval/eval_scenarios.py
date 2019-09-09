@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.realpath(os.path.join(__file__,"../../../")))
 
 from planner.tcbs.plan import plan as plan_tcbs, generate_config
-from planner.aco.ant_colony2 import ant_colony, distance, robot_pos_format, aco_costs 
+from planner.actf.ant_colony2 import ant_colony, distance, robot_pos_format, aco_costs 
 #for plotting#from planner.eval.display import plot_results
 from planner.greedy.greedy import plan_greedy
 #from planner.aco.aco_try import plan_aco
@@ -29,7 +29,7 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     # mapstr = get_map_str(grid) // chandra commented, no function defined in header file
     # print(mapstr) // chandra commented
     #print("PLAN")
-#
+
     print("-----------------------GREEDY-----------------------")
     greedy_time = time.time()
     minlp_res_agent_job, minlp_res_paths = plan_greedy(agent_pos, jobs, grid, config)
@@ -77,17 +77,6 @@ def eval(_map, agent_pos, jobs, fname, display=False, finished_blocking=True):
     print("--- Time taken is %s seconds ---" % (time.time() - tcbs_time))
     
 
-    # for PLOTTING
-    #plan_1(agent_pos, jobs, grid, config)
-    # # MINLP VS PLAN
-    # if display:
-    #     fig = plt.figure()
-    #     ax1 = fig.add_subplot(121, projection='3d')
-    #     ax2 = fig.add_subplot(122, projection='3d')
-    #     plot_results(ax1, [], res_paths, res_agent_job, agent_pos, grid, [], jobs)
-    #     plot_results(ax2, [], minlp_res_paths, minlp_res_agent_job, agent_pos, grid, [], jobs)
-    #     plt.show()
-    
     return 0 #costs_tcbs, #costs_minlp
 
 
@@ -110,9 +99,9 @@ def get_costs(paths, jobs, agent_job, display=True):
             else:
                 assert False, "Problem in assignment"
             ip += 2
-    print("Costs:\n(per job:)")
-    print(costs)
-    print("(total:)")
+    print("Costs:")
+    #print(costs)
+    #print("(total:)")
     print(sum(costs))
     return sum(costs)
 
@@ -179,8 +168,10 @@ def c():
     _map = load_map('c.png')
     agent_pos = [(3, 3),
               (6, 5)]
+    #agent_pos = [(1,2),(1,1)]
     jobs = [((4, 3), (4, 5), 0),
             ((5, 5), (5, 3), 0)]
+    #jobs = [((1,3),(1,5),2), ((1,5),(7,5),2)]
     eval(_map, agent_pos, jobs, 'c.pkl')
 
 
@@ -197,12 +188,15 @@ def line():
 
 # -------
 def h():
-    _map = load_map('h.png')
+    _map = load_map('map.png')
     agent_pos = [(0, 0),
               (2, 2)]
     jobs = [((0, 1), (2, 0), 0),
             ((2, 1), (0, 2), 0),
             ]
+    
+    agent_pos = [(1,2),(1,1)]
+    jobs = [((1,3),(1,5),2), ((1,5),(7,5),2)]
     eval(_map, agent_pos, jobs, 'h.pkl')
 
 

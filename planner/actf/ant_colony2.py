@@ -8,7 +8,6 @@ ACO __init__ : https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms
 cumulative probability behavior : http://stackoverflow.com/a/3679747/5343977
 zero increment : http://stackoverflow.com/a/10426033/5343977
 
-Threading : 
 Threading in Python : http://stackoverflow.com/a/11968818/5343977
 """
 
@@ -23,7 +22,7 @@ import networkx as nx
 
 ###########MAP###################
 '''
-
+Map: obstacles and size
 '''
 map = load_map('o.png')
 #print (map)
@@ -45,8 +44,12 @@ for n in G.nodes():
 
 G.remove_nodes_from(obstacle)
 
-###########COSTS###################
+###########COSTS AND COLLISIONS###################
 
+
+'''
+To obtain Waiting Costs of Tasks
+'''
 def aco_costs(paths, display=True):
     if not paths:
         return np.inf
@@ -75,6 +78,9 @@ def lengths(x):
             for z in lengths(y):
                 yield z
 
+'''
+To check for secondary collisions
+'''
 def collision_check(paths, robot):
     path_list = []
     for rob in range(robot+1):
@@ -192,6 +198,7 @@ class ant_colony:
             
 			calculate the attractiveness of each possible transition from the current location
 			then randomly choose a next path, based on its attractiveness
+            Formulas mentioned in Chapter 2.3.1 of thesis
             
 			"""
 			#on the first pass (no pheromones), then we can just choice() to find the next one
@@ -319,7 +326,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=5):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=10):
         
 		"""
         Initializing an ANT Colony. 
@@ -327,7 +334,7 @@ class ant_colony:
         "ants : holds worker ants as they traverse the map, properties: total distance traveled & route"
         ant_count : Number of ANTS generated
 		
-        robots : Number of Robots
+        robots : Number of Robots as a default. Overriden by robot_nodes
             
 		nodes : DICT, list with Labels to be used by distance_callback
 			
@@ -339,7 +346,7 @@ class ant_colony:
 		
 		distance_matrix : matrix filled with Distances by get_distance()
         
-        path_matrix :
+        path_matrix : matrix filled with Paths
 		
 		pheromone_map : final values of Pheromone
 		pheromone dissipation happens to these values first,
@@ -429,6 +436,9 @@ class ant_colony:
 			self.best_path_seen = None
 
 		def deal_matrices(start, nodes):
+			'''
+			Initializes matrices based on number of robots.
+			'''
 			#print "Deal_Matrices"
 			robot_nodes = []		            
 			if start is None:
@@ -488,6 +498,9 @@ class ant_colony:
 # =============================================================================
 	
 	def rdp(self, robot_assign, nodes, robot):
+		'''
+		Route, Distance, Path function to obtain Route Distance and Path easily.
+		'''
 		D = 0
 		pp = []#print len(robot_assign)        
 
@@ -684,9 +697,14 @@ class ant_colony:
 	def main(self):
 		#print("main")
 		"""
-        Runs Iteration Times
-        Runs Threading : ant.start() and ant.join() 
+        Runs Iteration Loops
+        Runs Robot Loops
+        Runs Threading : ant.start() and ant.join() OR 
 		Runs ANTS, collects their returns and updates pheromone map
+        Runs Soft Assign
+        Check Secondary Collisions
+        Checks for Best Distance
+        Complete Iteration, Resesting Matrices and Locations
 		"""
 		dists = []
 		answer_distance = None
@@ -899,22 +917,27 @@ def robot_pos_format(agent_pos):
 
 def run():
     jobs = [((7, 4), (0, 4), 4),
-    #        ((2, 2), (3, 7), 3),
+#            ((2, 2), (3, 7), 3),
             ((4, 5), (7, 5), 0),
-    #        ((2, 3), (7, 1), 0),
-    #        ((4, 6), (3, 6), 5),
-    #        ((5, 6), (0, 7), 1),
+#            ((2, 3), (7, 1), 0),
+#            ((4, 6), (3, 6), 5),
+            ((5, 6), (0, 7), 1),
             ((4, 4), (6, 6), 1)]
+    
+    #for c.png jobs = [((1,3),(1,5),2), ((1,5),(7,5),2)]    
     test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
     #print ("These are the Tasks " , test_nodes)
     
     #ROBOT STARTING POSTION
     agent_pos = [(1, 5),
-    #             (1, 6),
+                 (1, 6),
     #             (2, 2),
     #             (5, 1),
     #             (4, 7),
                  (1, 1)]
+    
+
+    #for c.png agent_pos = [(7,4), (1,2)]
     
     #rob_pos = robot_pos
     
@@ -927,7 +950,7 @@ def run():
     aco_time = time.time()
     answer_shortest_distance, answer_robot_assignments, answer_path_plan, for_graph, answer_cost, num_coll = colony.main()
     print "Best Route: " , answer_robot_assignments, "with Distance: ", answer_shortest_distance
-    #print "Path Plan:  " , answer_path_plan
+    print "Path Plan:  " , answer_path_plan
     print ("--- Time taken is %s seconds ---" % (time.time() - aco_time))
     print ("# of Iterations with Collisions: ", num_coll )
     aco_costs(answer_path_plan, False)
@@ -939,4 +962,5 @@ def run():
 
 ###################################################RUN#####################################
 #agent_pos = [(1,5),(1,1)]
+#To run from Framework, Comment run().
 #run()
