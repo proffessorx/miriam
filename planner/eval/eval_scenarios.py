@@ -217,10 +217,10 @@ def i():
 def s():
     _map = load_map('S.png')
     agent_pos = [(3, 4),
-              (6, 0),
+#              (6, 0),
               (2, 0)]
     jobs = [((0, 4), (0, 0), 0),
-            ((2, 4), (8, 0), 0),
+#            ((2, 4), (8, 0), 0),
             ((7, 0), (3, 4), 0),
             ]
     eval(_map, agent_pos, jobs, 'S.pkl')
@@ -228,11 +228,9 @@ def s():
 
 # -------
 def ff():
-    jobs = random_jobs(2, [(0, 0), (2, 0), (2, 6), (4, 6), (6, 2), (7, 7)])
+    jobs = [((1, 4), (7, 4), 2), ((4, 6), (6, 2), 3) , ((7, 7), (0, 0), 2)]
     _map = load_map('ff.png')
-    agent_pos = [(0, 0),
-              (2, 6),
-              (7, 7)]
+    agent_pos = [(0, 0), (2, 6)]
     return eval(_map, agent_pos, jobs, 'ff.pkl', finished_blocking=False, display=False)
 
 

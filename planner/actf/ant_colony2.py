@@ -33,9 +33,9 @@ map = load_map('o.png')
 map = map[:, ::2]
 #print map
 n = map.shape[0]
-#print map.shape
+print map.shape
 G = nx.grid_graph([n, n])
-#print ("G::: ", G)
+#print ("G::: ", G.nodes())
 
 obstacle = []
 for n in G.nodes():
@@ -326,7 +326,7 @@ class ant_colony:
 # =============================================================================
 		
 	def __init__(self, nodes, distance_callback, start = None, robots = 1, ant_count=3, alpha=0.5,
-              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=10):
+              beta=1.2,  pheromone_evaporation_coefficient=.4, pheromone_constant=1000, iterations=5):
         
 		"""
         Initializing an ANT Colony. 
@@ -918,19 +918,20 @@ def robot_pos_format(agent_pos):
 def run():
     jobs = [((7, 4), (0, 4), 4),
 #            ((2, 2), (3, 7), 3),
-            ((4, 5), (7, 5), 0),
+#            ((4, 5), (7, 5), 0),
 #            ((2, 3), (7, 1), 0),
 #            ((4, 6), (3, 6), 5),
-            ((5, 6), (0, 7), 1),
+#            ((5, 6), (0, 7), 1),
             ((4, 4), (6, 6), 1)]
     
+    #jobs = [((1, 4), (7, 4), 2), ((4, 6), (6, 2), 3) , ((7, 7), (0, 0), 2)]
     #for c.png jobs = [((1,3),(1,5),2), ((1,5),(7,5),2)]    
     test_nodes = { i : jobs[i] for i in range(0, len(jobs) ) }
     #print ("These are the Tasks " , test_nodes)
     
     #ROBOT STARTING POSTION
     agent_pos = [(1, 5),
-                 (1, 6),
+    #             (1, 6),
     #             (2, 2),
     #             (5, 1),
     #             (4, 7),
@@ -938,9 +939,9 @@ def run():
     
 
     #for c.png agent_pos = [(7,4), (1,2)]
-    
+
     #rob_pos = robot_pos
-    
+    #agent_pos = [(0, 0), (2, 6)]
     #robot_pos=[(1,1), None]
     
     #...we can make a colony of ants...
@@ -963,4 +964,4 @@ def run():
 ###################################################RUN#####################################
 #agent_pos = [(1,5),(1,1)]
 #To run from Framework, Comment run().
-#run()
+run()
