@@ -7,7 +7,6 @@ source : https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms#Edge_s
 ACO __init__ : https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms
 cumulative probability behavior : http://stackoverflow.com/a/3679747/5343977
 zero increment : http://stackoverflow.com/a/10426033/5343977
-
 Threading in Python : http://stackoverflow.com/a/11968818/5343977
 """
 from threading import Thread
