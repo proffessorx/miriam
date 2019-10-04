@@ -10,7 +10,6 @@ zero increment : http://stackoverflow.com/a/10426033/5343977
 
 Threading in Python : http://stackoverflow.com/a/11968818/5343977
 """
-
 from threading import Thread
 import time
 import numpy as np
